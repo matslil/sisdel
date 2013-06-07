@@ -35,6 +35,59 @@ tokenizer_t::tokenizer_t(environment_t& env, shared_ptr<mmap_file_t> file)
 {
 }
 
+void next_char()
+{
+	if (*m_currp == '\n') {
+		m_line++;
+		m_column = 1;
+	} else {
+		m_column++;
+	}
+
+	m_bytes_left--;
+	m_currp++;
+}
+
+void tokenizer_t::skip_whitespace()
+{
+	bool in_comment = false;
+
+	while (m_bytes_left) {
+		// Skip comments
+		if (*m_currp == '#') {
+			next_char();
+			while (m_bytes_left) {
+				if (skip("\n"))
+					break;
+				next_char();
+			}
+			continue;
+		}
+
+		// Skip whitespace characters
+		if (skip(" \t\r"))
+			continue;
+
+		// Skip linefeed if followed by line continuation
+		if (*m_currp == '\n') {
+			size_t old_column = m_column;
+			m_column = 1;
+			skip(" \t\r");
+			if ((m_bytes_left >= 3)
+			    && (m_currp[0] == m_currp[1] == m_currp[2] == '.')) {
+				m_bytes_left -= 3;
+				m_currp += 3;
+				m_line++;
+				continue;
+			}
+			else {
+				m_column += (old_column - 1);
+			}
+		}
+
+		break;
+	}
+}
 
 bool tokenizer_t::skip(const char *list)
 {
@@ -46,8 +99,7 @@ bool tokenizer_t::skip(const char *list)
 		for (i = 0; list[i] != '\0'; i++) {
 			if (*m_currp == list[i]) {
 				found = true;
-				m_currp++;
-				m_bytes_left--;
+				next_char();
 				break;
 			}
 		}
@@ -60,38 +112,35 @@ bool tokenizer_t::skip(const char *list)
 
 token_t& tokenizer_t::next()
 {
-	// Check whitespace, including comments
-	for(;;) {
-		if (!m_bytes_left) {
-			// End of file
-			token_t token(m_line, m_column);
-			return std::move(token);
-		}
-		if (*m_currp == ' ')
-			m_column++;
-		else if (*m_currp == '\t')
-			m_column += 8;
-		else if (*m_currp == '#') {
-			while (--m_bytes_left && (*(++m_currp) != '\n'));
-			continue;
-		}
-			
-		m_currp++;
-		m_bytes_left--;
-	}
+	skip_whitespace();
 	
-	// Check for line feed/carriage return
-	if (skip("\n\r")) {
+	// Check for line feed
+	if (*m_currp == '\n') {
+		m_token.m_line = m_line;
+		m_token.m_column = m_column;
+		m_token.m_type = token_t::identifier;
 		m_token.m_idx = token_t::eol;
+		while (skip("\n") || skip_whitespace());
 		return m_token;
 	}
-
+		
 	// Check for string
 	if (if *m_currp == '"') {
-		m_currp++;
-		m_bytes_left--;
+		next_char();
 		const char *str = m_currp;
+		hash_t hash = 0;
+		size_t nr_chars = 0;
+		while (m_currp != '"') {
+			if (!m_bytes_left--) {
+				// TODO: Report error
+				m_token.m_idx = token_t::err;
+				return m_token;
+			}
+			hash = hash_next(m_currp++, hash);
+			nr_chars++;
+		}
 		
+	}		
 }
 
 

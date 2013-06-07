@@ -35,7 +35,13 @@ class token_t {
 public:
 	enum : sbucket_idx_t {
 		eof = -1,
-		eol = -2
+		eol = -2,
+		err = -3
+	};
+
+	enum token_type_t {
+		identifier,
+		string
 	};
 
 	token_t(sbucket_idx_t idx, size_t line, size_t column)
@@ -46,6 +52,7 @@ public:
 
 private:
 	sbucket_idx_t m_idx;	
+	token_type_t m_type;
 	size_t m_line;
 	size_t m_column;
 };
@@ -58,6 +65,8 @@ public:
 	const token_t& next(type_t valid_types);
 
 private:
+	void next_char();
+	void skip_whitespace();
 	bool skip(const char *list);
 
 	environment_t& m_env;
@@ -65,6 +74,8 @@ private:
 	token_t m_token;
 	const char *m_currp;
 	size_t m_bytes_left;
+	size_t m_line;
+	size_t m_column;
 };
 
 #endif /* TOKEN_H */
