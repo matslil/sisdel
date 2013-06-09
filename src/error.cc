@@ -1,4 +1,4 @@
-#include "error.h"
+#include "error.hh"
 
 namespace error {
 	std::error_code make_error_code(error_code_t err) {
@@ -23,8 +23,16 @@ std::string error_category_impl::message(int ev) const {
 
 std::error_condition error_category_impl::default_error_condition(int ev) const {
 	switch (ev) {
+		// Parser error
 	case error::syntax_error:
 		return std::error_condition(error::parser_error, *this);
+	case error::unexpected_eof:
+		return std::error_condition(error::parser_error, *this);
+
+		// Implementation error
+	case error::internal_error:
+		return std::error_condition(error::implementation_error, *this);
+
 	default:
 		return std::error_condition(ev, *this);
 	}

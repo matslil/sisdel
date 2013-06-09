@@ -28,6 +28,44 @@ along with GCC; see the file COPYING.  If not see
 
 #include "token.hh"
 #include "hash.h"
+#include "cctype.hh"
+
+/**
+ * Token syntax
+ *
+ * This token scanner adheres to the syntax as described below.
+ * The file being scanned consists of tokens separated by either blank,
+ * tab, or carriage return.
+ *
+ * Line feed has a special meaning for the parser, so it is returned as an
+ * identifier token. There is an exception however: if the first token on
+ * the line following the line feed is three dots, then this measns that
+ * the line feed should be ignored.
+ *
+ * For example, the following produces a line feed token between foo and bar:
+ *
+ * foo
+ * bar
+ *
+ * But in this example, only foo and bar will be tokens:
+ *
+ * foo
+ * ... bar
+ *
+ * This therefore becomes equivalent with:
+ *
+ * foo bar
+ *
+ * Tokens can have either of following types:
+ * - Identifier   This can be line-feed or any word consisting of any valid
+ *                character.
+ * - Integer      An integer value with optinally a unit name.
+ * - Float        A floating point value with optionally a unit name.
+ * - String       A string with optionally a unit name.
+ *
+ * The token might also be an error token. The above will still be filled in,
+ * but a check for error will indicate that the token wasn't parsed correctly.
+ */
 
 tokenizer_t::tokenizer_t(environment_t& env, shared_ptr<mmap_file_t> file)
 	: m_env(env), m_file(file), m_token(-1, 1, 1),
@@ -84,7 +122,6 @@ void tokenizer_t::skip_whitespace()
 				m_column += (old_column - 1);
 			}
 		}
-
 		break;
 	}
 }
@@ -110,98 +147,135 @@ bool tokenizer_t::skip(const char *list)
 	return found;
 }
 
+intmax_t get_value(std::error_code& ec)
+{
+	uintmax_t value = 0;
+	bool parser_error = false;
+	while (m_bytes_left && isdigit(*m_currp)) {
+		const uintmax_t old_value = value;
+		value *= radix;
+		value += *m_currp - '0';
+		if (value < old_value) {
+			// TODO: Report overflow
+			parser_error = true;
+		}
+		next_char();
+	}
+
+	if (parser_error)
+		ec = error::overflow_error;
+
+	return value;
+}
+
+sbucket_idx_t get_identifier(std::error_code& ec)
+{
+	const char * const str = m_currp;
+	hasher_t hash;
+
+	while (m_bytes_left && (std::strchr(" \t\r\n#", *m_currp) != NULL)) {
+		hash._next(m_currp;
+		next_char();
+	}
+
+	return m_env.sbucket().find_add_hashed(str, m_currp - str, hash);
+}
+
 token_t& tokenizer_t::next()
 {
+	std::error_code ec = 0;
+
 	skip_whitespace();
 	
 	// Check for line feed
 	if (*m_currp == '\n') {
 		m_token.m_line = m_line;
 		m_token.m_column = m_column;
-		m_token.m_type = token_t::identifier;
-		m_token.m_idx = token_t::eol;
 		while (skip("\n") || skip_whitespace());
-		return m_token;
+		return m_token.set_identifier(token_t::eol, ec);
 	}
+
+	// We have something, mark this position
+	m_token.m_line = m_line;
+	m_token.m_column = m_column;	
 		
 	// Check for string
-	if (if *m_currp == '"') {
+	if (*m_currp == '"') {
 		next_char();
 		const char *str = m_currp;
-		hash_t hash = 0;
+		hasher_t hash;
 		size_t nr_chars = 0;
 		while (m_currp != '"') {
 			if (!m_bytes_left--) {
-				// TODO: Report error
-				m_token.m_idx = token_t::err;
-				return m_token;
+				ec = error::unexpected_eof;
+				return m_token.set_string_constant("", ec);
 			}
-			hash = hash_next(m_currp++, hash);
+			hash.next(m_currp++);
 			nr_chars++;
 		}
-		
+		const sbucket_idx_t unit = get_identifier(ec);		
+		return m_token.set_string_constant(
+			env.sbucket().find_add_hashed(
+				str, nr_chars, hash), unit, ec);
 	}		
-}
 
+	// Check for number
+	if (isdigit(*m_currp) || ((*m_currp == '-') && (m_bytes_left > 1)
+				  && isdigit(*m_currp))) {
+		unsigned radix = 10;
+		const int signedness = 1;
 
-enum Status token_next(struct Scope *scope,
-		       TokenHandle handle,
-		       SbucketIdx *out_token,
-		       enum TokenType *out_type) {
-	const char * const old_linep = &handle->linep[handle->pos];
-	enum Status status;
-	size_t nr_chars = 0;
-	hash_t hash = 0;
-
-	if (handle->pos == handle->linelen) return status_end_of_file;
-
-	if ((handle->pos == 0) && ((handle->linep[handle->pos] == ' ') || (handle->linep[handle->pos] == '\t'))) {
-		/* Indent token */
-		*out_type = token_type_indent;
-		
-		while ((handle->pos != handle->linelen)
-		       && ((handle->linep[handle->pos] == ' ')
-			   || (handle->linep[handle->pos] == '\t'))) {
-			hash = hash_next(hash, handle->linep[handle->pos]);
-			nr_chars++;
-			handle->pos++;
+		if (*m_currp == '-') {
+			signedness = -1;
+			next_char();
 		}
 
-		hash = hash_finish(hash);
+		if ((m_bytes_left > 1) && (m_currp[0] == '0')) {
+			if ((m_currp[1] == 'x') || (m_currp[1] == 'X')) {
+				radix = 16;
+				next_char(2);
+			}
+			else if ((m_currp[1] == 'b') || (m_currp[1] == 'B')) {
+				radix = 2;
+				next_char(2);
+			}
+			else if (isdigit(m_currp[2])) {
+				radix = 8;
+				next_char();
+			}
+		}
 
-		status = sbucket_find_add_hashed(
-			scope, handle->bucket, old_linep, nr_chars, hash, out_token);
+		intmax_t value;
 
-		if (status == status_success)
-			*out_type = token_type_indent;
+		value = get_value(ec);
+		value *= signedness;
+		
+		// Check if float
+		if (*m_currp == '.') {
+			m_token.m_type = token_t::floating_point;
+			double dvalue = value;
 
-		return status;
+			if ((uintmax_t) dvalue != value)
+				ec = error::overflow_error;
+
+			next_char();
+			uintmax_t divisor = radix;
+			while (m_bytes_left && isdigit(*m_currp)) {
+				const double old_dvalue = dvalue;
+				dvalue += (double) (*m_currp - '0') / divisor;
+				divisor *= radix;
+				next_char();
+			}
+
+			const sbucket_idx_t unit = get_identifier(ec);
+			return m_token.set_float_constant(dvalue, unit, ec);
+		}
+
+		const sbucket_idx_t unit = get_identifier(ec);		
+		return m_token.set_integer_constant(value, unit, ec);
 	}
 
-	/* Skip leading white-space */
-	while ((handle->pos != handle->linelen)
-	       && ((handle->linep[handle->pos] == ' ')
-		   || (handle->linep[handle->pos] == '\t'))) handle->pos++;
-
-	if (handle->pos == handle->linelen) return status_end_of_file;
-
-	hash = 0;
-
-	while ((handle->pos != handle->linelen)
-	       && ((handle->linep[handle->pos] != ' ')
-		   || (handle->linep[handle->pos] != '\t'))) {
-		hash = hash_next(hash, handle->linep[handle->pos]);
-		nr_chars++;
-		handle->pos++;
-	}
-
-	hash = hash_finish(hash);
-
-	status = sbucket_find_add_hashed(
-		scope, handle->bucket, old_linep, nr_chars, hash, out_token);
-
-	if (status == status_success)
-		*out_type = token_type_token;
-
-	return status;
+	// If nothing else, then this is an identifier
+        const sbucket_idx_t idx = get_identifier(ec);
+	return m_token.set_identifier(idx, ec);
 }

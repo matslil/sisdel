@@ -5,12 +5,16 @@ namespace error {
 
 	// Sisdel error codes
 	enum error_code_t {
-		syntax_error = 1
+		no_error = 0,
+		syntax_error,
+		unexpected_eof,
+		internal_error,
 	};
 
 	// Sisdel error conditions
 	enum error_condition_t {
-		parser_error = 1
+		parser_error = 1,
+		implementation_error
 	};
 
 	std::error_code make_error_code(error_code_t err);

@@ -26,11 +26,43 @@
 #define HASH_H
 
 #include <stdint.h>
+#include "error.hh"
 
 typedef uint32_t hash_t;
 
-static inline hash_t hash_next(char chr, hash_t hash) { hash += (hash_t) chr; hash += (hash << 10); hash ^= (hash >> 6); return hash; }
+class hasher_t {
+public:
+	hasher_t() : m_hash(0), m_finished(false) {}
+	
+	hasher_t& next(char chr)
+		{
+			if (m_finished)
+				throw std::system_error(
+					error::internal_error,
+					error_category(),
+					"attempted to update finalized hash "
+					"code");
+			m_hash += (hash_t) chr;
+			m_hash += (m_hash << 10);
+			m_hash ^= (m_hash >> 6);
 
-static inline hash_t hash_finish(hash_t hash) { hash += (hash << 3); hash ^= (hash >> 11); hash += (hash << 15); return hash; }
+			return *this;
+		}
+
+	operator hash_t()
+		{
+			if (!m_finished) {
+				m_finished = true;
+				m_hash += (m_hash << 3);
+				m_hash ^= (m_hash >> 11);
+				m_hash += (m_hash << 15);
+			}
+			return m_hash;
+		}			
+
+private:
+	hash_t m_hash;
+	bool   m_finished;
+};
 
 #endif /* HASH_H */

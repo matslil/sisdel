@@ -87,9 +87,11 @@ CC := clang
 C++ := clang++
 
 CCFILES := sbucket.cc
+CCFILES += error.cc
 CCFILES += mmap.cc
 CCFILES += file.cc
 CCFILES += mmap_file.cc
+CCFILES += token.cc
 CFILES += sisdel_tracepoints.c
 
 UNIT_TESTS := sbucket

@@ -37,13 +37,12 @@ namespace {
 			for (size_t i = 0; i < m_nr_strings; i++) {
 				const size_t size = std::min(
 					static_cast<size_t>(n(r)), m_max_size);
-				hash_t hash = 0;
+				hasher_t hash;
 				for (size_t c = 0; c < size; c++) {
 					const char ch = static_cast<char>(u(r));
 					m_strings[i].push_back(ch);
-					hash = hash_next(ch, hash);
+					hash.next(ch);
 				}
-				hash = hash_finish(hash);
 				m_hash[i] = hash;
 			}
 		}
