@@ -95,6 +95,7 @@ CCFILES += token.cc
 CFILES += sisdel_tracepoints.c
 
 UNIT_TESTS := sbucket
+UNIT_TESTS += token
 
 SRCFILES_ALL := $(CCFILES) $(CFILES) $(addsuffix .cc,$(addprefix check_,$(UNIT_TESTS)))
 
@@ -111,7 +112,7 @@ override LIBS += -ldl
 
 # all: Makefile sisdel.o
 
-test: Makefile check_sbucket
+test: Makefile $(addprefix check_,$(UNIT_TESTS))
 
 # How to create C (and header) source files from a tracepoint template file
 #sisdel_tracepoints.c sisdel_tracepoints.h: sisdel_tracepoints.tp

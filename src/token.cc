@@ -27,8 +27,9 @@ along with GCC; see the file COPYING.  If not see
 
 
 #include "token.hh"
-#include "hash.h"
-#include "cctype.hh"
+#include "hash.hh"
+
+#include <cstring>
 
 /**
  * Token syntax
@@ -67,28 +68,86 @@ along with GCC; see the file COPYING.  If not see
  * but a check for error will indicate that the token wasn't parsed correctly.
  */
 
-tokenizer_t::tokenizer_t(environment_t& env, shared_ptr<mmap_file_t> file)
-	: m_env(env), m_file(file), m_token(-1, 1, 1),
-	  m_currp(file.buf()), m_bytes_left(file.buf_size())
+bool token_t::operator==(const token_t& rhs) const
 {
-}
+	if ((m_type != rhs.m_type) || (m_error != rhs.m_error)
+	    || (m_line != rhs.m_line) || (m_column != rhs.m_column)
+	    || (m_idx != rhs.m_idx))
+		return false;
 
-void next_char()
-{
-	if (*m_currp == '\n') {
-		m_line++;
-		m_column = 1;
-	} else {
-		m_column++;
+	switch (m_type) {
+	case type_t::identifier:
+		break;
+	case type_t::integer_constant:
+		if (m_int != rhs.m_int)
+			return false;
+		break;
+	case type_t::float_constant:
+		if (m_double != rhs.m_double)
+			return false;
+		break;
+	case type_t::string_constant:
+		if (m_string != rhs.m_string)
+			return false;
+		break;
 	}
 
-	m_bytes_left--;
-	m_currp++;
+	return true;
 }
 
-void tokenizer_t::skip_whitespace()
+void token_t::print(std::ostream& os) const
 {
-	bool in_comment = false;
+	switch (m_type) {
+	case type_t::identifier:
+		os << "identifier '" << m_env.sbucket()[m_idx] << "'";
+		break;
+	case type_t::integer_constant:
+		os << "integer " << m_int << "[" << m_env.sbucket()[m_idx]
+		   << "]";
+		break;
+	case type_t::float_constant:
+		os << "float " << m_double << "[" << m_env.sbucket()[m_idx]
+		   << "]";
+		break;
+	case type_t::string_constant:
+		os << "string \"" << m_env.sbucket()[m_string] << "\"["
+		   << m_env.sbucket()[m_idx] << "]";
+		break;
+	}
+
+	os << ": " << m_error.category().name() << ": "
+	   << m_error.message();
+
+	os << "\n";
+}
+
+tokenizer_t::tokenizer_t(environment_t& env, const char *buf, size_t buf_size)
+	: m_env(env), m_token(env),
+	  m_currp(buf), m_bytes_left(buf_size)
+{
+}
+
+void tokenizer_t::next_char(unsigned nr_chars)
+{
+	for (; nr_chars > 0; nr_chars--) {
+		if (!m_bytes_left)
+			return;
+
+		if (*m_currp == '\n') {
+			m_line++;
+			m_column = 1;
+		} else {
+			m_column++;
+		}
+
+		m_bytes_left--;
+		m_currp++;
+	}
+}
+
+bool tokenizer_t::skip_whitespace()
+{
+	const char * const orig_currp = m_currp;
 
 	while (m_bytes_left) {
 		// Skip comments
@@ -124,6 +183,8 @@ void tokenizer_t::skip_whitespace()
 		}
 		break;
 	}
+
+	return m_currp != orig_currp;
 }
 
 bool tokenizer_t::skip(const char *list)
@@ -147,7 +208,7 @@ bool tokenizer_t::skip(const char *list)
 	return found;
 }
 
-intmax_t get_value(std::error_code& ec)
+uintmax_t tokenizer_t::get_value(unsigned radix, std::error_code& ec)
 {
 	uintmax_t value = 0;
 	bool parser_error = false;
@@ -168,22 +229,22 @@ intmax_t get_value(std::error_code& ec)
 	return value;
 }
 
-sbucket_idx_t get_identifier(std::error_code& ec)
+sbucket_idx_t tokenizer_t::get_identifier()
 {
 	const char * const str = m_currp;
 	hasher_t hash;
 
 	while (m_bytes_left && (std::strchr(" \t\r\n#", *m_currp) != NULL)) {
-		hash._next(m_currp;
+		hash.next(*m_currp);
 		next_char();
 	}
 
 	return m_env.sbucket().find_add_hashed(str, m_currp - str, hash);
 }
 
-token_t& tokenizer_t::next()
+const token_t& tokenizer_t::next()
 {
-	std::error_code ec = 0;
+	std::error_code ec;
 
 	skip_whitespace();
 	
@@ -205,17 +266,20 @@ token_t& tokenizer_t::next()
 		const char *str = m_currp;
 		hasher_t hash;
 		size_t nr_chars = 0;
-		while (m_currp != '"') {
-			if (!m_bytes_left--) {
+		for (;;) {
+			if (!m_bytes_left) {
 				ec = error::unexpected_eof;
-				return m_token.set_string_constant("", ec);
+				return m_token.set_string_constant(
+					token_t::eof, token_t::eof, ec);
 			}
-			hash.next(m_currp++);
-			nr_chars++;
+			if (*m_currp == '"')
+				break;
+			hash.next(*m_currp);
+			next_char();
 		}
-		const sbucket_idx_t unit = get_identifier(ec);		
+		const sbucket_idx_t unit = get_identifier();		
 		return m_token.set_string_constant(
-			env.sbucket().find_add_hashed(
+			m_env.sbucket().find_add_hashed(
 				str, nr_chars, hash), unit, ec);
 	}		
 
@@ -223,7 +287,7 @@ token_t& tokenizer_t::next()
 	if (isdigit(*m_currp) || ((*m_currp == '-') && (m_bytes_left > 1)
 				  && isdigit(*m_currp))) {
 		unsigned radix = 10;
-		const int signedness = 1;
+		int signedness = 1;
 
 		if (*m_currp == '-') {
 			signedness = -1;
@@ -247,35 +311,33 @@ token_t& tokenizer_t::next()
 
 		intmax_t value;
 
-		value = get_value(ec);
+		value = get_value(radix, ec);
 		value *= signedness;
 		
 		// Check if float
 		if (*m_currp == '.') {
-			m_token.m_type = token_t::floating_point;
 			double dvalue = value;
 
-			if ((uintmax_t) dvalue != value)
+			if ((intmax_t) dvalue != value)
 				ec = error::overflow_error;
 
 			next_char();
 			uintmax_t divisor = radix;
 			while (m_bytes_left && isdigit(*m_currp)) {
-				const double old_dvalue = dvalue;
 				dvalue += (double) (*m_currp - '0') / divisor;
 				divisor *= radix;
 				next_char();
 			}
 
-			const sbucket_idx_t unit = get_identifier(ec);
+			const sbucket_idx_t unit = get_identifier();
 			return m_token.set_float_constant(dvalue, unit, ec);
 		}
 
-		const sbucket_idx_t unit = get_identifier(ec);		
+		const sbucket_idx_t unit = get_identifier();		
 		return m_token.set_integer_constant(value, unit, ec);
 	}
 
 	// If nothing else, then this is an identifier
-        const sbucket_idx_t idx = get_identifier(ec);
+        const sbucket_idx_t idx = get_identifier();
 	return m_token.set_identifier(idx, ec);
 }

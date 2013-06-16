@@ -52,6 +52,8 @@ public:
 				      size_t str_len,
 				      hash_t hash);
 
+	sbucket_idx_t find_add(const char *str, size_t str_len);
+
 	const char *operator[](sbucket_idx_t idx);
 
 	// Defaults

@@ -25,101 +25,118 @@ along with GCC; see the file COPYING.  If not see
 #define TOKEN_H
 
 #include <memory>
+#include <ostream>
 #include "environment.hh"
 #include "file.hh"
 #include "sbucket.hh"
-#include "value.hh"
 #include "error.hh"
+#include "mmap_file.hh"
 
 class token_t {
 	friend class tokenizer_t;
+	friend class test_token;
 public:
 	enum : sbucket_idx_t {
 		eof = -1,
 		eol = -2
 	};
 
-	enum token_type_t {
+	enum class type_t {
 		identifier,
 		string_constant,
 		integer_constant,
 		float_constant
 	};
 
-	token_t() : m_idx(0), m_line(0), m_column(0) {}
+	token_t(environment_t& env) : m_idx(0), m_line(0), m_column(0),
+				      m_env(env) {}
+	token_t(token_t&) = default;
+	token_t(token_t&&) = default;
 	sbucket_idx_t identifier() const 
 		{
-			if (m_type != identifier) throw std::system_error(
-				error::internal_error,
-				error_category());
+			if (m_type != type_t::identifier)
+				throw std::system_error(
+					error::internal_error,
+					error_category());
 			return m_idx;
 		}
 	intmax_t integer_constant(sbucket_idx_t& unit) const
 		{
-			if (m_type != integer_constant) throw std::system_error(
-				error::internal_error,
-				error_category());
+			if (m_type != type_t::integer_constant)
+				throw std::system_error(
+					error::internal_error,
+					error_category());
 			unit = m_idx;
 			return m_int;
 		}
 	double float_constant(sbucket_idx_t& unit) const
 		{
-			if (m_type != float_constant) throw std::system_error(
-				error::internal_error,
-				error_category());
+			if (m_type != type_t::float_constant)
+				throw std::system_error(
+					error::internal_error,
+					error_category());
 			unit = m_idx;
 			return m_double;
 		}
-	const std::string& string_constant(sbucket_idx_t& unit) const
+	sbucket_idx_t  string_constant(sbucket_idx_t& unit) const
 		{
-			if (m_type != string_constant) throw std::system_error(
-				error::internal_error,
-				error_category());
+			if (m_type != type_t::string_constant)
+				throw std::system_error(
+					error::internal_error,
+					error_category());
 			unit = m_idx;
 			return m_string;
 		}
 	size_t line() const { return m_line; }
 	size_t column() const { return m_column; }
 
-	bool operator bool() const { return ec == true; }
+	operator bool() const { return static_cast<bool>(m_error); }
 	std::error_code error() const { return m_error; }
 
-private:
-	const token_t& set_identifier(sbucket_idx_t idx,
-				      std::error_code ec)
+	bool operator==(const token_t& rhs) const;
+	void print(std::ostream& os) const;
+
+	token_t& set_pos(size_t line, size_t column)
+		{
+			m_line = line;
+			m_column = column;
+			return *this;
+		}
+
+	token_t& set_identifier(sbucket_idx_t idx, std::error_code ec)
 		{
 			m_idx = idx;
-		        m_type = identifier;
+		        m_type = type_t::identifier;
 			m_error = ec;
 			return *this;
 		}
-	const token_t& set_integer_constant(intmax_t value,
-					    sbucket_idx_t unit,
-					    std::error_code ec)
+	token_t& set_integer_constant(intmax_t value,
+				      sbucket_idx_t unit,
+				      std::error_code ec)
 		{
 			m_int = value;
 			m_idx = unit;
-			m_type = integer;
+			m_type = type_t::integer_constant;
 			m_error = ec;
 			return *this;
 		}
-	const token_t& set_float_constant(double value,
-					  sbucket_idx_t unit,
-					  std::error_code ec)
+	token_t& set_float_constant(double value,
+				    sbucket_idx_t unit,
+				    std::error_code ec)
 		{
 			m_double = value;
 			m_idx = unit;
-			m_type = floating_point;
+			m_type = type_t::float_constant;
 			m_error = ec;
 			return *this;
 		}
-	const token_t& set_string_constant(sbucket_idx_t str,
-					   sbucket_idx_t unit,
-					   std::error_code ec)
+	token_t& set_string_constant(sbucket_idx_t str,
+				     sbucket_idx_t unit,
+				     std::error_code ec)
 		{
 			m_string = str;
 			m_idx = unit;
-			m_type = string_constant;
+			m_type = type_t::string_constant;
 			m_error = ec;
 			return *this;
 		}
@@ -134,7 +151,7 @@ private:
 
 	/** Value of double
 	 *  Valid for type floating_point. */
-	double   m_dobule;
+	double   m_double;
 
 	/** Value of string
 	 *  Valid for type string_constant. */
@@ -146,31 +163,33 @@ private:
 
 	/** Token type
 	 *  Indicates what type the token is of. */
-	token_type_t m_type;
+	type_t m_type;
 
 	/** Defined at line */
 	size_t m_line;
 
 	/** Defined at column */
 	size_t m_column;
+
+	/** Environment reference, only needed for print() */
+	environment_t& m_env;
 };
 
 class tokenizer_t {
 public:
-	tokenizer_t(environment_t& env, shared_ptr<mmap_file_t> file);
-	~tokenizer_t();
+	tokenizer_t(environment_t& env, const char *buf, size_t buf_size);
+	~tokenizer_t() {}
 
-	const token_t& next(type_t valid_types);
+	const token_t& next();
 
 private:
-	void next_char();
-	void skip_whitespace();
+	void next_char(unsigned nr_chars = 1);
+	bool skip_whitespace();
 	bool skip(const char *list);
-	uintmax_t get_value();
-	sbucket_idx_t get_identifier(std:error_code& ec);
+	uintmax_t get_value(unsigned radix, std::error_code& ec);
+	sbucket_idx_t get_identifier();
 
 	environment_t& m_env;
-	shared_ptr<mmap_file_t> m_file;
 	token_t m_token;
 	const char *m_currp;
 	size_t m_bytes_left;

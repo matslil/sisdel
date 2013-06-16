@@ -32,11 +32,14 @@ class mmap_file_t {
 public:
 	mmap_file_t(environment_t &env, sbucket_idx_t name);
 	mmap_file_t(mmap_file_t &&from);
-	~mmap_file_t() {}
-	mmap_file_t& operator=(mmap_file_t &&from);
-	const char *buf() const { return static_cast<const char *>(m_map.map()); }
-	sbucket_idx_t name() const { return m_name; }
-	size_t buf_size() const { return m_map.size(); }
+	virtual ~mmap_file_t() {}
+	virtual mmap_file_t& operator=(mmap_file_t &&from);
+	virtual const char *buf() const
+		{
+			return static_cast<const char *>(m_map.map());
+		}
+	virtual sbucket_idx_t name() const { return m_name; }
+	virtual size_t buf_size() const { return m_map.size(); }
 
 	// Forbidden methods
 	mmap_file_t() = delete;

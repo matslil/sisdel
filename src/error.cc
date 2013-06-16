@@ -28,6 +28,8 @@ std::error_condition error_category_impl::default_error_condition(int ev) const 
 		return std::error_condition(error::parser_error, *this);
 	case error::unexpected_eof:
 		return std::error_condition(error::parser_error, *this);
+	case error::overflow_error:
+		return std::error_condition(error::parser_error, *this);
 
 		// Implementation error
 	case error::internal_error:

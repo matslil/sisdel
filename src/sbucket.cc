@@ -51,6 +51,17 @@ sbucket_t::~sbucket_t()
 	tracepoint(tp_sisdel, tp_sbucket_destroy, this);
 }
 
+sbucket_idx_t sbucket_t::find_add(const char *str, size_t str_len)
+{
+	hasher_t hash;
+
+	for (size_t pos = 0; pos < str_len; pos++) {
+		hash.next(str[pos]);
+	}
+
+	return find_add_hashed(str, str_len, hash);
+}
+
 sbucket_idx_t sbucket_t::find_add_hashed(const char *str,
 				    size_t str_len,
 				    hash_t hash)
