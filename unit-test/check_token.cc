@@ -28,6 +28,12 @@ void PrintTo(const token_t& token, ::std::ostream* os) {
 	token.print(*os);
 }
 
+template<typename T, size_t size>
+size_t array_size(T(&)[size])
+{
+	return size;
+}
+
 namespace {
 	class test_token : public ::testing::Test {
 	public:
@@ -101,6 +107,20 @@ namespace {
 				return token;
 			}
 
+		void check_parser(const char *the_code,
+				  const token_t expected_tokens[],
+				  size_t nr_tokens)
+			{
+				tokenizer_t tokenizer(m_env, the_code,
+						      strlen(the_code));
+		
+				for (size_t idx = 0; idx < nr_tokens; idx++) {
+					EXPECT_EQ(tokenizer.next(),
+						  expected_tokens[idx])
+						<< "iteration " << idx;
+				}
+			}
+
 	protected:
 		virtual void SetUp() {
 		}
@@ -111,19 +131,44 @@ namespace {
 
 	TEST_F(test_token, test_identifiers) {
 		const char * const the_code =
-			"identfier-number-1 identifier-number-2";
+			"identifier-number-1 identifier-number-2";
 		const token_t expected_tokens[] = {
 			make_identifier("identifier-number-1", 1, 1),
-			make_identifier("identifier-number-2", 1, 20)
+			make_identifier("identifier-number-2", 1, 21)
 		};
-		tokenizer_t tokenizer(m_env, the_code, strlen(the_code));
-		
-		for (size_t idx = 0;
-		     idx < (sizeof (expected_tokens)
-			    / sizeof (*expected_tokens));
-		     idx++) {
-			EXPECT_EQ(tokenizer.next(), expected_tokens[idx]);
-		}
+
+		check_parser(the_code, expected_tokens,
+			     array_size(expected_tokens));
+	}
+
+	TEST_F(test_token, test_continuation) {
+		const char * const the_code =
+			"some tokens\n... that are continued\n";
+		const token_t expected_tokens[]  = {
+			make_identifier("some", 1, 1),
+			make_identifier("tokens", 1, 6),
+			make_identifier("that", 2, 5),
+			make_identifier("are", 2, 10),
+			make_identifier("continued", 2, 14)
+		};
+
+		check_parser(the_code, expected_tokens,
+			     array_size(expected_tokens));
+	}
+
+	TEST_F(test_token, test_continuation2) {
+		const char * const the_code =
+			"some tokens\n # Hmmm ...\n  \t... that are continued\n";
+		const token_t expected_tokens[]  = {
+			make_identifier("some", 1, 1),
+			make_identifier("tokens", 1, 6),
+			make_identifier("that", 3, 8),
+			make_identifier("are", 3, 13),
+			make_identifier("continued", 3, 17)
+		};
+
+		check_parser(the_code, expected_tokens,
+			     array_size(expected_tokens));
 	}
 
 	const std::error_code test_token::success_code;

@@ -69,7 +69,7 @@ sbucket_idx_t sbucket_t::find_add_hashed(const char *str,
 	sbucket_idx_t idx = m_hash[hash % m_hash_entries];
 	
 	while (idx >= 0) {
-		if (m_idx[idx].str().compare(0, str_len, str) == 0) {
+		if (m_idx[idx].str().compare(0, str_len, str, str_len) == 0) {
 			tracepoint(tp_sisdel, tp_sbucket_find, hash, str, str_len, idx);
 			return idx;
 		}

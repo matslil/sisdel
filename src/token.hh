@@ -36,22 +36,23 @@ class token_t {
 	friend class tokenizer_t;
 	friend class test_token;
 public:
-	enum : sbucket_idx_t {
-		eof = -1,
-		eol = -2
-	};
-
 	enum class type_t {
+		end_of_file,
+		end_of_line,
 		identifier,
 		string_constant,
 		integer_constant,
 		float_constant
 	};
 
-	token_t(environment_t& env) : m_idx(0), m_line(0), m_column(0),
+	token_t(environment_t& env) : m_idx(0), m_int(0), m_double(0),
+				      m_string(0), m_line(0), m_column(0),
 				      m_env(env) {}
 	token_t(token_t&) = default;
 	token_t(token_t&&) = default;
+
+	type_t type() const { return m_type; }
+
 	sbucket_idx_t identifier() const 
 		{
 			if (m_type != type_t::identifier)
@@ -103,10 +104,25 @@ public:
 			return *this;
 		}
 
+	token_t& set_end_of_file(void)
+		{
+			m_type = type_t::end_of_file;
+			m_idx = m_int = m_double = m_string = 0;
+			return *this;
+		}
+
+	token_t& set_end_of_line(void)
+		{
+			m_type = type_t::end_of_line;
+			m_idx = m_int = m_double = m_string = 0;
+			return *this;
+		}
+
 	token_t& set_identifier(sbucket_idx_t idx, std::error_code ec)
 		{
 			m_idx = idx;
 		        m_type = type_t::identifier;
+			m_int = m_double = m_string = 0;
 			m_error = ec;
 			return *this;
 		}
@@ -117,6 +133,7 @@ public:
 			m_int = value;
 			m_idx = unit;
 			m_type = type_t::integer_constant;
+			m_double = m_string = 0;
 			m_error = ec;
 			return *this;
 		}
@@ -127,6 +144,7 @@ public:
 			m_double = value;
 			m_idx = unit;
 			m_type = type_t::float_constant;
+			m_int = m_string = 0;
 			m_error = ec;
 			return *this;
 		}
@@ -137,6 +155,7 @@ public:
 			m_string = str;
 			m_idx = unit;
 			m_type = type_t::string_constant;
+			m_int = m_double = 0;
 			m_error = ec;
 			return *this;
 		}
@@ -184,7 +203,8 @@ public:
 
 private:
 	void next_char(unsigned nr_chars = 1);
-	bool skip_whitespace();
+	void skip_whitespace_chars();
+	void skip_whitespace();
 	bool skip(const char *list);
 	uintmax_t get_value(unsigned radix, std::error_code& ec);
 	sbucket_idx_t get_identifier();

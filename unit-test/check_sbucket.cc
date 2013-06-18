@@ -41,7 +41,10 @@ namespace {
 				for (size_t c = 0; c < size; c++) {
 					const char ch = static_cast<char>(u(r));
 					m_strings[i].push_back(ch);
-					hash.next(ch);
+
+					// Don't hash last character
+					if (c < (size-1))
+						hash.next(ch);
 				}
 				m_hash[i] = hash;
 			}
@@ -57,19 +60,23 @@ namespace {
 		std::array<sbucket_idx_t, m_nr_strings> str_idx;
 
 		for (size_t i = 0; i < m_nr_strings; i++) {
+			const size_t str_len = (m_strings[i].size() > 0)
+				? m_strings[i].size() - 1 : 0;
 			str_idx[i] = 
 				m_env.sbucket().find_add_hashed(
 					m_strings[i].c_str(),
-					m_strings[i].size(),
+					str_len,
 					m_hash[i]);
 		}
 
 		for (size_t i = 0; i < m_nr_strings; i++) {
+			const size_t str_len = (m_strings[i].size() > 0)
+				? m_strings[i].size() - 1 : 0;
 			EXPECT_EQ(str_idx[i],
 				  m_env.sbucket().find_add_hashed(
 					  m_strings[i].c_str(),
-					  m_strings[i].size(),
-					  m_hash[i]));
+					  str_len,
+					  m_hash[i])) << "iteration " << i;
 		}
 				  
 	}

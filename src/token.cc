@@ -76,18 +76,23 @@ bool token_t::operator==(const token_t& rhs) const
 		return false;
 
 	switch (m_type) {
+	case type_t::end_of_file:
+	case type_t::end_of_line:
+		break;
 	case type_t::identifier:
+		if (m_idx != rhs.m_idx)
+			return false;
 		break;
 	case type_t::integer_constant:
-		if (m_int != rhs.m_int)
+		if ((m_int != rhs.m_int) || (m_idx != rhs.m_idx))
 			return false;
 		break;
 	case type_t::float_constant:
-		if (m_double != rhs.m_double)
+		if ((m_double != rhs.m_double) || (m_idx != rhs.m_idx))
 			return false;
 		break;
 	case type_t::string_constant:
-		if (m_string != rhs.m_string)
+		if ((m_string != rhs.m_string) || (m_idx != rhs.m_idx))
 			return false;
 		break;
 	}
@@ -97,23 +102,50 @@ bool token_t::operator==(const token_t& rhs) const
 
 void token_t::print(std::ostream& os) const
 {
+	os << "line " << m_line << ", column " << m_column << ": ";
+
 	switch (m_type) {
+	case type_t::end_of_file:
+		os << "end-of-file";
+		break;
+	case type_t::end_of_line:
+		os << "end-of-line";
+		break;
 	case type_t::identifier:
-		os << "identifier '" << m_env.sbucket()[m_idx] << "'";
-		break;
-	case type_t::integer_constant:
-		os << "integer " << m_int << "[" << m_env.sbucket()[m_idx]
-		   << "]";
-		break;
-	case type_t::float_constant:
-		os << "float " << m_double << "[" << m_env.sbucket()[m_idx]
-		   << "]";
+		os << "identifier";
 		break;
 	case type_t::string_constant:
-		os << "string \"" << m_env.sbucket()[m_string] << "\"["
-		   << m_env.sbucket()[m_idx] << "]";
+		os << "string";
 		break;
-	}
+	case type_t::integer_constant:
+		os << "integer";
+		break;
+	case type_t::float_constant:
+		os << "float";
+		break;
+	};
+
+	if (!m_error)
+		switch (m_type) {
+		case type_t::end_of_file:
+		case type_t::end_of_line:
+			break;
+		case type_t::identifier:
+			os << " '" << m_env.sbucket()[m_idx] << "'";
+			break;
+		case type_t::integer_constant:
+			os << m_int << " ["
+			   << m_env.sbucket()[m_idx] << "]";
+			break;
+		case type_t::float_constant:
+			os << m_double << " ["
+			   << m_env.sbucket()[m_idx] << "]";
+			break;
+		case type_t::string_constant:
+			os << " \"" << m_env.sbucket()[m_string] << "\"["
+			   << m_env.sbucket()[m_idx] << "]";
+			break;
+		}
 
 	os << ": " << m_error.category().name() << ": "
 	   << m_error.message();
@@ -122,8 +154,8 @@ void token_t::print(std::ostream& os) const
 }
 
 tokenizer_t::tokenizer_t(environment_t& env, const char *buf, size_t buf_size)
-	: m_env(env), m_token(env),
-	  m_currp(buf), m_bytes_left(buf_size)
+	: m_env(env), m_token(env), m_currp(buf), m_bytes_left(buf_size),
+	  m_line(1), m_column(1)
 {
 }
 
@@ -145,10 +177,8 @@ void tokenizer_t::next_char(unsigned nr_chars)
 	}
 }
 
-bool tokenizer_t::skip_whitespace()
+void tokenizer_t::skip_whitespace_chars()
 {
-	const char * const orig_currp = m_currp;
-
 	while (m_bytes_left) {
 		// Skip comments
 		if (*m_currp == '#') {
@@ -162,29 +192,46 @@ bool tokenizer_t::skip_whitespace()
 		}
 
 		// Skip whitespace characters
-		if (skip(" \t\r"))
-			continue;
+		if ((*m_currp == ' ')
+		    || (*m_currp == '\t')
+		    || (*m_currp == '\r')) {
+			next_char();
+		} else {
+			break;
+		}
+	}
+}
+
+void tokenizer_t::skip_whitespace()
+{
+	while (m_bytes_left) {
+		skip_whitespace_chars();
 
 		// Skip linefeed if followed by line continuation
 		if (*m_currp == '\n') {
-			size_t old_column = m_column;
-			m_column = 1;
-			skip(" \t\r");
+			// Remember position in case this wasn't continuation
+			const size_t old_column = m_column;
+			const size_t old_line = m_line;
+			const char * const old_currp = m_currp;
+
+			next_char();
+			skip_whitespace_chars();
 			if ((m_bytes_left >= 3)
-			    && (m_currp[0] == m_currp[1] == m_currp[2] == '.')) {
-				m_bytes_left -= 3;
-				m_currp += 3;
-				m_line++;
+			    && (m_currp[0] == '.')
+			    && (m_currp[1] == '.')
+			    && (m_currp[2] == '.')) {
+				next_char(3);
 				continue;
 			}
 			else {
-				m_column += (old_column - 1);
+				// No continuation, restore position
+				m_column = old_column;
+				m_line = old_line;
+				m_currp = old_currp;
 			}
 		}
 		break;
 	}
-
-	return m_currp != orig_currp;
 }
 
 bool tokenizer_t::skip(const char *list)
@@ -234,7 +281,12 @@ sbucket_idx_t tokenizer_t::get_identifier()
 	const char * const str = m_currp;
 	hasher_t hash;
 
-	while (m_bytes_left && (std::strchr(" \t\r\n#", *m_currp) != NULL)) {
+	while (m_bytes_left
+	       && (*m_currp != ' ')
+	       && (*m_currp != '\t')
+	       && (*m_currp != '\r')
+	       && (*m_currp != '\n')
+	       && (*m_currp != '#')) {
 		hash.next(*m_currp);
 		next_char();
 	}
@@ -250,16 +302,17 @@ const token_t& tokenizer_t::next()
 	
 	// Check for line feed
 	if (*m_currp == '\n') {
-		m_token.m_line = m_line;
-		m_token.m_column = m_column;
-		while (skip("\n") || skip_whitespace());
-		return m_token.set_identifier(token_t::eol, ec);
+		m_token.set_pos(m_line, m_column);
+		return m_token.set_end_of_line();
 	}
 
 	// We have something, mark this position
-	m_token.m_line = m_line;
-	m_token.m_column = m_column;	
-		
+	m_token.set_pos(m_line, m_column);
+
+	// Check if we got end of file
+	if (!m_bytes_left)
+		return m_token.set_end_of_file();
+
 	// Check for string
 	if (*m_currp == '"') {
 		next_char();
@@ -270,7 +323,7 @@ const token_t& tokenizer_t::next()
 			if (!m_bytes_left) {
 				ec = error::unexpected_eof;
 				return m_token.set_string_constant(
-					token_t::eof, token_t::eof, ec);
+					-1, -1, ec);
 			}
 			if (*m_currp == '"')
 				break;
