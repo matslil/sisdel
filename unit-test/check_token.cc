@@ -37,6 +37,22 @@ size_t array_size(T(&)[size])
 namespace {
 	class test_token : public ::testing::Test {
 	public:
+		token_t make_end_of_file(size_t line, size_t column)
+			{
+				token_t token(m_env);
+
+				token.set_pos(line, column).set_end_of_file();
+				return token;
+			}
+
+		token_t make_end_of_line(size_t line, size_t column)
+			{
+				token_t token(m_env);
+
+				token.set_pos(line, column).set_end_of_line();
+				return token;
+			}
+
 		token_t make_identifier(
 			const char *name,
 			size_t line,
@@ -44,7 +60,7 @@ namespace {
 			std::error_code ec = success_code)
 			{
 				token_t token(m_env);
-				
+
 				token.set_pos(line, column).set_identifier(
 					m_env.sbucket().find_add(
 						name, strlen(name)),
@@ -57,16 +73,16 @@ namespace {
 			const char *unit,
 			size_t line,
 			size_t column,
-			std::error_code ec = error::make_error_code(
-				error::no_error))
+			std::error_code ec = success_code)
 			{
 				token_t token(m_env);
 
-				token.set_pos(line, column).set_integer_constant(
-					value,
-					m_env.sbucket().find_add(
-						unit, strlen(unit)),
-					ec);
+				const sbucket_idx_t unit_idx = (unit == NULL)
+					? -1 : m_env.sbucket().find_add(
+						unit, strlen(unit));
+
+				token.set_pos(line, column);
+				token.set_integer_constant(value, unit_idx, ec);
 				return token;
 			}
 
@@ -75,16 +91,16 @@ namespace {
 			const char *unit,
 			size_t line,
 			size_t column,
-			std::error_code ec = error::make_error_code(
-				error::no_error))
+			std::error_code ec = success_code)
 			{
 				token_t token(m_env);
 				
-				token.set_pos(line, column).set_float_constant(
-					value,
-					m_env.sbucket().find_add(
-						unit, strlen(unit)),
-					ec);
+				const sbucket_idx_t unit_idx = (unit == NULL)
+					? -1 : m_env.sbucket().find_add(
+						unit, strlen(unit));
+
+				token.set_pos(line, column);
+				token.set_float_constant(value, unit_idx, ec);
 				return token;
 			}
 
@@ -93,17 +109,19 @@ namespace {
 			const char *unit,
 			size_t line,
 			size_t column,
-			std::error_code ec = error::make_error_code(
-				error::no_error))
+			std::error_code ec = success_code)
 			{
 				token_t token(m_env);
 				
-				token.set_pos(line, column).set_string_constant(
+				const sbucket_idx_t unit_idx = (unit == NULL)
+					? -1 : m_env.sbucket().find_add(
+						unit, strlen(unit));
+
+				token.set_pos(line, column);
+				token.set_string_constant(
 					m_env.sbucket().find_add(
 						str, strlen(str)),
-					m_env.sbucket().find_add(
-						unit, strlen(unit)),
-					ec);
+					unit_idx, ec);
 				return token;
 			}
 
@@ -117,7 +135,7 @@ namespace {
 				for (size_t idx = 0; idx < nr_tokens; idx++) {
 					EXPECT_EQ(tokenizer.next(),
 						  expected_tokens[idx])
-						<< "iteration " << idx;
+						<< ">>> iteration " << idx;
 				}
 			}
 
@@ -134,7 +152,29 @@ namespace {
 			"identifier-number-1 identifier-number-2";
 		const token_t expected_tokens[] = {
 			make_identifier("identifier-number-1", 1, 1),
-			make_identifier("identifier-number-2", 1, 21)
+			make_identifier("identifier-number-2", 1, 21),
+			make_end_of_file(1, 40)
+		};
+
+		check_parser(the_code, expected_tokens,
+			     array_size(expected_tokens));
+	}
+
+	TEST_F(test_token, test_integer) {
+		const char * const the_code =
+			"137 0x15 0b01001 0077\n"
+			"137[kbps] 0x15[m/s] -0b01001[kg] -0077[l]";
+		const token_t expected_tokens[] = {
+			make_integer(137, NULL, 1, 1),
+			make_integer(0x15, NULL, 1 ,5),
+			make_integer(9, NULL, 1, 10),
+			make_integer(0077, NULL, 1, 18),
+			make_end_of_line(1, 22),
+			make_integer(137, "kbps", 2, 1),
+			make_integer(0x15, "m/s", 2, 11),
+			make_integer(-9, "kg", 2, 21),
+			make_integer(-0077, "l", 2, 34),
+			make_end_of_file(2, 42)
 		};
 
 		check_parser(the_code, expected_tokens,
@@ -149,7 +189,9 @@ namespace {
 			make_identifier("tokens", 1, 6),
 			make_identifier("that", 2, 5),
 			make_identifier("are", 2, 10),
-			make_identifier("continued", 2, 14)
+			make_identifier("continued", 2, 14),
+			make_end_of_line(2, 23),
+			make_end_of_file(3, 1)
 		};
 
 		check_parser(the_code, expected_tokens,
@@ -164,7 +206,9 @@ namespace {
 			make_identifier("tokens", 1, 6),
 			make_identifier("that", 3, 8),
 			make_identifier("are", 3, 13),
-			make_identifier("continued", 3, 17)
+			make_identifier("continued", 3, 17),
+			make_end_of_line(3, 26),
+			make_end_of_file(4, 1)
 		};
 
 		check_parser(the_code, expected_tokens,

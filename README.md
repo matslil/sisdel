@@ -1,6 +1,4 @@
--*- mode: text; fill-margin: 80 -*-
-
-Welcome to Sisdel - Simple syntax dependency language
+Welcome to Sisdel - Simple syntax dependency language  {#mainpage}
 =====================================================
 
 This is an experimental language that wants to explore the
@@ -21,15 +19,10 @@ freedom is good and what isn't.
 
 The directory layout:
 
-COPYING	      License, currently GPL3. The license model is not set in
-	      stone, but will be some variant of GPL.
-sisdel_design.odt A more detailed description of the
-	      language. Currently very volatile and might be
-	      completely rewritten anytime.
-REDME.md      This file, contains a short introduction.
-Makefile      Makefile to build everything. Invoke it from a separate
-	      directory so that build files will not be intermixed
-	      with source code. Use "-f <path>/Makefile" to point the
-	      file out.
-src/	      Directory where the source code is.
-unit-test/    Directory where the unit test implementation is.
+File        | Description
+----------- | -------------
+COPYING	    | License, currently GPL3. The license model is not set in stone, but will be some variant of GPL.
+REDME.md    | This file, contains a short introduction.
+Makefile    | Makefile to build everything. Invoke it from a separate directory so that build files will not be intermixed with source code. Use "-f <path>/Makefile" to point the file out.
+src/	    | Directory where the source code is.
+unit-test/  | Directory where the unit test implementation is.

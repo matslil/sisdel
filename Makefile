@@ -135,6 +135,18 @@ clean:
 lint: $(CFILES)
 	clang --analyze $(CPPFLAGS) $(LINTFLAGS) $^
 
+doxygen.cfg: $(SRCPATH)/doxygen.cfg
+	@echo "   GEN $<"
+	sed -e 's!###INPUT###!$(SRCPATH)!g' $< > $@
+
+version.sh: $(SRCPATH)/version.sh
+	@echo "   GEN $<"
+	sed -e 's!###INPUT###!$(SRCPATH)!g' $< > $@
+
+doc: doxygen.cfg Makefile
+	@echo "   DOC "
+	doxygen $<
+
 .SECONDEXPANSION:
 
 $(addprefix check_,$(UNIT_TESTS)): $(CCFILES) $$@.cc gtest-all.cc $(CFILES:.c=.o)

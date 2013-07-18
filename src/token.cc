@@ -31,43 +31,6 @@ along with GCC; see the file COPYING.  If not see
 
 #include <cstring>
 
-/**
- * Token syntax
- *
- * This token scanner adheres to the syntax as described below.
- * The file being scanned consists of tokens separated by either blank,
- * tab, or carriage return.
- *
- * Line feed has a special meaning for the parser, so it is returned as an
- * identifier token. There is an exception however: if the first token on
- * the line following the line feed is three dots, then this measns that
- * the line feed should be ignored.
- *
- * For example, the following produces a line feed token between foo and bar:
- *
- * foo
- * bar
- *
- * But in this example, only foo and bar will be tokens:
- *
- * foo
- * ... bar
- *
- * This therefore becomes equivalent with:
- *
- * foo bar
- *
- * Tokens can have either of following types:
- * - Identifier   This can be line-feed or any word consisting of any valid
- *                character.
- * - Integer      An integer value with optinally a unit name.
- * - Float        A floating point value with optionally a unit name.
- * - String       A string with optionally a unit name.
- *
- * The token might also be an error token. The above will still be filled in,
- * but a check for error will indicate that the token wasn't parsed correctly.
- */
-
 bool token_t::operator==(const token_t& rhs) const
 {
 	if ((m_type != rhs.m_type) || (m_error != rhs.m_error)
@@ -134,11 +97,11 @@ void token_t::print(std::ostream& os) const
 			os << " '" << m_env.sbucket()[m_idx] << "'";
 			break;
 		case type_t::integer_constant:
-			os << m_int << " ["
+			os << " " << m_int << " ["
 			   << m_env.sbucket()[m_idx] << "]";
 			break;
 		case type_t::float_constant:
-			os << m_double << " ["
+			os << " " << m_double << " ["
 			   << m_env.sbucket()[m_idx] << "]";
 			break;
 		case type_t::string_constant:
@@ -213,6 +176,7 @@ void tokenizer_t::skip_whitespace()
 			const size_t old_column = m_column;
 			const size_t old_line = m_line;
 			const char * const old_currp = m_currp;
+			const size_t old_bytes_left = m_bytes_left;
 
 			next_char();
 			skip_whitespace_chars();
@@ -222,12 +186,12 @@ void tokenizer_t::skip_whitespace()
 			    && (m_currp[2] == '.')) {
 				next_char(3);
 				continue;
-			}
-			else {
+			} else {
 				// No continuation, restore position
 				m_column = old_column;
 				m_line = old_line;
 				m_currp = old_currp;
+				m_bytes_left = old_bytes_left;
 			}
 		}
 		break;
@@ -270,7 +234,7 @@ uintmax_t tokenizer_t::get_value(unsigned radix, std::error_code& ec)
 		next_char();
 	}
 
-	if (parser_error)
+	if (parser_error && !ec)
 		ec = error::overflow_error;
 
 	return value;
@@ -291,7 +255,79 @@ sbucket_idx_t tokenizer_t::get_identifier()
 		next_char();
 	}
 
+	if ((m_currp - str) == 0)
+		throw std::system_error(error::internal_error,
+					error_category(),
+					"Empty identifier");
+
 	return m_env.sbucket().find_add_hashed(str, m_currp - str, hash);
+}
+
+sbucket_idx_t tokenizer_t::get_string(std::error_code& ec)
+{
+	const char * const str = m_currp;
+	hasher_t hash;
+
+	if (*m_currp != '"')
+		return -1;
+
+	next_char();
+
+	while (*m_currp != '"') {
+		if (!m_bytes_left) {
+			if (!ec) ec = error::unexpected_eof;
+			return -1;
+		}
+		hash.next(*m_currp);
+		next_char();
+	}
+
+	return m_env.sbucket().find_add_hashed(str, m_currp - str, hash);	
+}
+
+sbucket_idx_t tokenizer_t::get_unit(std::error_code& ec)
+{
+	if (*m_currp != '[') {
+		if (!ec
+		    && (*m_currp != '\n')
+		    && (*m_currp != '\r')
+		    && (*m_currp != '\t')
+		    && (*m_currp != ' ')) {
+			ec = error::illegal_character;
+		}
+		return -1;
+	}
+
+	next_char();
+
+	const char * const str = m_currp;
+	hasher_t hash;
+
+	while (*m_currp != ']') {
+		if (!m_bytes_left) {
+			if (!ec) ec = error::unexpected_eof;
+			return -1;
+		}
+		if ((*m_currp == '\n')
+		    || (*m_currp == ' ')
+		    || (*m_currp == '\t')
+		    || (*m_currp == '\r')) {
+			if (!ec) ec = error::illegal_character;
+			return -1;
+		}
+		hash.next(*m_currp);
+		next_char();
+	}
+
+	const size_t nr_chars = m_currp - str;
+
+	next_char();
+
+	if (nr_chars == 0)
+		return -1;
+
+	return m_env.sbucket().find_add_hashed(str, nr_chars, hash);
+	
 }
 
 const token_t& tokenizer_t::next()
@@ -300,12 +336,6 @@ const token_t& tokenizer_t::next()
 
 	skip_whitespace();
 	
-	// Check for line feed
-	if (*m_currp == '\n') {
-		m_token.set_pos(m_line, m_column);
-		return m_token.set_end_of_line();
-	}
-
 	// We have something, mark this position
 	m_token.set_pos(m_line, m_column);
 
@@ -313,32 +343,25 @@ const token_t& tokenizer_t::next()
 	if (!m_bytes_left)
 		return m_token.set_end_of_file();
 
+	// Check for line feed
+	if (*m_currp == '\n') {
+		m_token.set_pos(m_line, m_column);
+		next_char();
+		return m_token.set_end_of_line();
+	}
+
 	// Check for string
 	if (*m_currp == '"') {
-		next_char();
-		const char *str = m_currp;
-		hasher_t hash;
-		size_t nr_chars = 0;
-		for (;;) {
-			if (!m_bytes_left) {
-				ec = error::unexpected_eof;
-				return m_token.set_string_constant(
-					-1, -1, ec);
-			}
-			if (*m_currp == '"')
-				break;
-			hash.next(*m_currp);
-			next_char();
-		}
-		const sbucket_idx_t unit = get_identifier();		
+		const sbucket_idx_t str = get_string(ec);
+		const sbucket_idx_t unit = get_unit(ec);
+
 		return m_token.set_string_constant(
-			m_env.sbucket().find_add_hashed(
-				str, nr_chars, hash), unit, ec);
+			str, unit, ec);
 	}		
 
 	// Check for number
 	if (isdigit(*m_currp) || ((*m_currp == '-') && (m_bytes_left > 1)
-				  && isdigit(*m_currp))) {
+				  && isdigit(m_currp[1]))) {
 		unsigned radix = 10;
 		int signedness = 1;
 
@@ -382,11 +405,11 @@ const token_t& tokenizer_t::next()
 				next_char();
 			}
 
-			const sbucket_idx_t unit = get_identifier();
+			const sbucket_idx_t unit = get_unit(ec);
 			return m_token.set_float_constant(dvalue, unit, ec);
 		}
 
-		const sbucket_idx_t unit = get_identifier();		
+		const sbucket_idx_t unit = get_unit(ec);
 		return m_token.set_integer_constant(value, unit, ec);
 	}
 

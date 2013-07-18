@@ -108,7 +108,8 @@ sbucket_idx_t sbucket_t::find_add_hashed(const char *str,
 }
 
 const char *sbucket_t::operator[](sbucket_idx_t idx) {
-	const char * const str = m_idx[idx].str().c_str();
+	const char * const str = (idx < 0)
+		? "<error>" : m_idx[idx].str().c_str();
 	tracepoint(tp_sisdel, tp_sbucket_index, idx, str);
 	return str;
 }

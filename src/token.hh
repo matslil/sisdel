@@ -208,6 +208,8 @@ private:
 	bool skip(const char *list);
 	uintmax_t get_value(unsigned radix, std::error_code& ec);
 	sbucket_idx_t get_identifier();
+	sbucket_idx_t get_string(std::error_code& ec);
+	sbucket_idx_t get_unit(std::error_code& ec);
 
 	environment_t& m_env;
 	token_t m_token;

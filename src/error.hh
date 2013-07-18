@@ -35,7 +35,8 @@ namespace error {
 		syntax_error,
 		unexpected_eof,
 		internal_error,
-		overflow_error
+		overflow_error,
+		illegal_character
 	};
 
 	// Sisdel error conditions
