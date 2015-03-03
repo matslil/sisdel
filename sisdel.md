@@ -1,8 +1,58 @@
 Simple Syntax Dependency Language (Sisdel)
 ==========================================
 
+Sisdel is an experimental language intended to examine how to make
+dependency tracking as accessible, useful and simple as possible.
+
+Principles
+----------
+Principles are statements that should guide the langauge design. These
+are seen as truths for having the best design, and have no internal
+order of priority. The numbering is only for easy reference.
+
+1. Each piece of code should have one specific purpose only, but the
+   language may specify how generic that piece of code is.
+   *Rationale:* Makes the code easier to understand, maintain and debug.
+2. Software entities should be open for extensions, but closed for
+   modifications.
+   *Rationale:* Otherwise it becomes hard to know whether the piece of
+   code you read is actually what will be executed.
+3. A type should be replaceable with one of its sub-types, without
+   altering the correctness of the program.
+   *Rationale:* This is a a non-object oriented variant of Liskov
+   substitution principle. In Sisdel this is actually the definition of
+   a type, to differentiate it from units. This is the expected behavior.
+4. Algorithms should by default be as generic as possible without
+   violating the correctness of the program.
+   *Rationale:* This is to ensure code reuse. This will help to keep
+   the amount of needed code down, and will make sure there is less
+   code that needs to be maintained and debugged.
+5. Only interfaces shall be inherited, not algorithm.
+   *Rationale:* Inheriting algorithm can easily result in subtle
+   issues since the inherited algorithm wasn't written for the new
+   interace.
+6. Mutable states shall only be used where strictly necessary.
+   *Rationale:* Mutable states make correctness validation harder, and
+   should therefore be kept to the necessary minimum. It also makes
+   the code easier to understand.
+
 Goals
 -----
+1. The language syntax should be easy to learn and master.
+2. It should be easy to understand the design when reading the code.
+3. It should require significant effort to write code that isn't well
+   behaving, intuitive, secure and robust.
+4. When errors do occur, it should be easy to understand what made the
+   error to occur.
+5. The language should be a generic language, suitable for compiled
+   applications, shell scripts as well as build scripts.
+6. It should have good support for cloud computing, where different
+   parts of the code runs on different hardware in a network.
+7. It should offer good parallellization of execution.
+8. The language should offer a robust and simple way for code re-use.
+
+Features
+--------
 1. It shall be possible from outside as well as from the code to save
    the complete internal state of the program. This state shall be
    complete enough that it is possible to restart the program from
@@ -30,71 +80,174 @@ Goals
 
 High-level design decisions
 ---------------------------
-This chapter describes how the goals have been implemented, and the
-rationale for the design decisions.
+There are many ways of implementing the goals above. This chapter
+describes the way chosen for Sisdel.
 
-First, these are the design decisions, numbered for easy reference:
-1. Use a class-less object orientation, albeit without support for
-   inheritance.
-2. Make a functional programming paradigm the default, and imperative
-   programming paradigm possible as an option.
-3. All components that builds up the language shall be made first
+The design decisions are numbered for easy reference:
+1. Use functional oriented programming by default.
+   *Rationale:* Functional oriented programming does not use mutable
+   states, which supports principle 6.
+2. Make imperative oriented programming an option.
+   *Rationale:* There are cases when it is easier to talk about states
+   rather than stateless functions. Therefore the language should have
+   support for this. This should not be the default though.
+3. Support constraint oriented programming.
+   *Rationale:* This helps in making the default assumption that the
+   code should be as generic as possible, while being possible to
+   specify using constraints where this does not make sense.
+4. All components that builds up the language shall be made first
    class citizens.
+   *Rationale:* If a component exists in the language and is not
+   sensible for having as a first class citizen, then this is an
+   indication that the programming language isn't designed in the most
+   intuitive way.
+5. Data shall have a unit.
+   *Rationale:* Units describes what data is compatible for cases
+   where the types are compatible. This makes it possible to
+   distinguish for example the value 1 representing an ordering number
+   from cases when it is intended to be an index. Or a 1 meaning
+   weight in kilogram as opposed to a 1 meaning weight in pound. But
+   for all these cases, the same algorithms that does addition,
+   subtraction, division etc can be used.
+6. Context oriented parsing. For each token being parsed, the context
+   for the next token is determined by previous tokens. So context
+   changes not only by which block the code is in, but also where on
+   the line the code lies.
+   *Rationale:* This is similar to how natural language works.
 
-Sisdel Building Blocks
-----------------------
+Types
+-----
+At the heart of Sisdel there are the types. The types have a strict
+hierarchy where each entity have exactly one parent, except for the
+top-most entity which has none.
 
-Sisdel has the following basic building blocks:
+This is the tree of types being pre-defined by Sisdel:
 
-Built-in data types:
-* real numbers
-* string (Unicode, UTF-8 by default)
+Thing
+ |-- Code
+ |    |-- Constraint
+ |    |-- Operator
+ |
+ |-- Value
+ |    |-- Number
+ |    |
+ |    |-- String
+ |         |-- Documentation
+ |
+ |-- Set
+ |    |-- Map
+ |    |    |-- Namespace
+ |    |
+ |    |-- Stream
+ |         |-- Array
+ |
+ |-- Unit
+ |-- Dependency
+ |-- Security token
+ |-- License
+ |-- Author
 
-Built-in containers:
-* map
-* set
-* list
+Note that while the hierarchy describes what operations that can be
+performed for each type, constraints and security tokens can be used
+to further limit what operations that are allowed.
 
-Built-in meta data:
-* type
-* constraint
-* dependency
-* method
+Description of each type:
+*Thing* - The top-most type. It serves the purpose of saying "any
+	type".
+*Code* - Any piece of code that can be executed.
+*Constraint* - Code the describes a constraint. Made its own type
+	because together with type it is essential for describing an
+	interface.
+*Operator* - Code which optionally accepts an argument, and when
+	executed produces a thing.
+*Value* - Data that isn't natively interpreted as part of Sisdel
+	itself, but rather data that is part of the program itself.
+*Number* - Any number including integers and floats.
+*String* - Unicode UTF-8 string.
+*Documentation* - String attached to code to describe the code.
+*Set* - An unordered collection of things. A set can be iterated, but
+	there is no concept of "next" and "previous".
+*Map* - A pair consisting of a key and a data, where the key is used
+	as an index name to access data. If the key is an unsigned
+	integer, it differs from array by being unordered.
+*Stream* - An ordered collection which only has a "next" entry, no
+	"previous". Especially useful for describing cases where a read
+	alters a state, e.g. reading the next random number from a random
+	number device.
+*Array* - An ordered collection of things, having both "next" and a
+	"previous" entry. Note that this includes linked list.
+*Unit* - A tag placed on a type to describe compatibility. The unit is
+	unique per type, i.e. same unit name used on incompatible types
+	means different things. Unit does not affect what code is
+	compatible with the type, only what other type that can be
+	calculated together with this type.
+*Dependency* - Describes from other things a certain thing was
+	derived.
+*Security token* - A token describing access priviledges, i.e. what
+	operations that are allowed on that thing.
+*License* - Describes what code can be mixed with what other code. It
+	is also used for calculating the resulting license for the
+	application.
+*Author* - The copyright holder of the code.
 
+Namespace
+---------
+All things reside in a namespace. Namespaces provides a way of
+describing what you mean with a certain name, when this name can be
+used in different places. For example, the type "client" might mean
+different things in a business context from a database context, and
+can therefore be placed in different namespaces.
 
+When code refers to a name, namespace helps in determining what this
+name really refers to. The current namespace is searched first, and
+then any parent namespace until file scope has been reached. This
+means that parent namespace is auto imported into child namespace
+within a file, but not across files.
 
-The smallest re-usable entity in Sisdel is referred to as an
-object. Note that objects in Sisdel might be similar to objects in
-traditional object oriented languages, but Sisdel lacks some
-properties. For example, Sisdel objects does not inherit
-implementation, only interface.
+It is also possible to import namespaces across files, but this needs
+to be done explicitly using "import" keyword. This also requires that
+the other files have exported the namespaces.
 
-All Sisdel objects have the following properties:
-* *value* --- Could be an integer, map, method, string, dependency,
-  type, unit, constraint, reference.
-* *inherited from* --- Builds an inheritance tree, which usually ends
-  with a type object.
-* *uuid* --- A hash code that uniquely identifies the objects value.
+There are a number of namespaces pre-defined by Sisdel:
+*env* - This is the environment in which an application runs. It
+	typically contains the environment variables stored by the
+	operating system.
+*arg* - The argument given when importing a namespace or when invocing
+	an operator.
+*thread* - Namespace given for this thread of execution. Note that
+	this is not thread as seen by an operating system. An execution
+	thread can extend with messages being passed around.
 
-There is a set of basic objects pre-defined by the language:
+Contraints
+----------
 
-### Constraint Object
+Constraints applicable for different types:
 
-Merely a set of rules describing constraints on the object value.
-
-### Reference Object
-
-A valid identifier name, and a reference to an object.
-
-### Type Object
-
-Contains a reference object and a constraint object.
-
-
-
-
-Sisdel vs Object-Oriented Languages
------------------------------------
+* Numbers
+  - integer
+  - unsigned
+  - range [from <value>] [to <value>] [every <value>]
+  - odd | even
+  - size <value>
+  - precision <value>
+  - accuracy <value>
+* string
+  - upper-case
+  - lower-case
+  - normalized
+  - range [from <value>] [to <value>]
+  - size <value>
+  - length <value>
+* Set
+  - size <value>
+  - size [from <value>] [to <value>]
+* Array
+  - size <value>
+  - size [from <value>] [to <value>]
+  - sort-ascending
+  - sort-descending
+* security-token
+  - once-only
 
 Sisdel Object Repository
 ------------------------
@@ -108,9 +261,7 @@ with it:
 * License
 * Test status, or "trustness"
 
-Sisdel is an experimental language intended to examine how to make
-dependency tracking as accessible, useful and simple as possible. It
-tries to solve the following high level goals:
+It tries to solve the following high level goals:
 1. Maximize software reuse on object level, to make full use of what
    others have written earlier. Similar thinking as cloud computing
    and network function virtualization.
@@ -118,9 +269,10 @@ tries to solve the following high level goals:
    it may concern, e.g. to interpreter, software package manager, end
    user.
 3. When accepting a dependency, also consider object version,
-trustfulness, security, and characteristics in addition to pure
-functionality. Such constrictions are inherited.  To implement above
-high-level goals, the following low-level goals are set:
+   trustfulness, security, and characteristics in addition to pure
+   functionality. Such constrictions are inherited.
+
+To implement above high-level goals, the following low-level goals are set:
 1. Class-less object orientation.
 2. Inheritance only done on interface level, not on implementation
    level.
@@ -152,132 +304,142 @@ shouldn't require experienced programmers to be able to read the
 code. Ideally, even non-programmers should be able to guess what the
 code does given that good symbol names was used when programming.
 
-Scanner syntax in extended Backus-Naur format:
-(* All names below ending with “-token” are entities returned by the scanner *)
-program = { line } ;
-line = indent-token , token-sequence , { newln , '...' , token-sequence }
-	, newln-token ;
-indent-token = { ? tab ? } ;
-token-sequence = { { token-separator } ,  symbol } ;
-token-separator = ( ? tab ? | ? space ? ) , { ? tab ? | ? space ? } ;
-newln = ? new line ? , { ? new line ? } ;
-newln-token = newln ;
-symbol = identifier-token | number-token | string-token | comment ;
-identifier-token = valid-identifier-first-char
-	, { valid-identifier-consecutive-char }
-	(* must not be '…' *) ;
-valid-identifier-first-char = ? printable chars except ”
-	- 0 1 2 3 4 5 6 7 8 9 ? ;
-valid-identifier-consecutive-char = ? printable chars except “ ?
-number-token = [ '-' ] , ( dec-unsigned , [ '.' , dec-unsigned ]
-	, [ 'E' , dec-unsigned ] )
-	| ( '0x' , hex-unsigned , [ '.' , hex-unsigned ] . [ 'E' , hex-unsigned ] )
-	| ( '0o' , oct-unsigned , [ '.' , oct-unsigned ] . [ 'E' , oct-unsigned ] )
-	| ( '0b' , bin-unsigned , [ '.' , bin-unsigned ] , [ 'E' , bin-unsigned ] ) ;
-dec-unsigned = dec-digit , { dec-digit } ;
-hex-unsigned = hex-digit , { hex-digit} ;
-oct-unsigned = oct-digit , { oct-digit } ;
-bin-unsigned = bin-digit , { bin-digit } ;
-bin-digit = '0' | '1' ;
-oct-digit = bin-digit | '2' | '3' | '4' | '5' | '6' | '7' ;
-dec-digit = oct-digit | '8' | '9' | ' ;
-hex-digit = dec-digit | 'a' | 'b' | 'c' | 'e' | 'f'  ;
-string-token = '”' , { valid-identifier-consecutive-char } , '”'
-comment = '#' , { ? printable char ? } , newln ;
-Parser syntax:
-(* All names below ending with “-token” comes from the scanner *)
-program = { expression } ;
-expression = value , { newln-token , indent-token , value }  newln-token ;
-value = identifier-token (* procedure *)
-	| number-token
-	| string-token
-	| value , { ',' , value } (* list *)
-	| '(' , { value } , ')' (* precedence change *)
-	| value , identifier-token (* unary operator *)
-	| value , identifier-token , value (* binary operator *);
+Regarding comments: These are seen as part of application
+documentation, and are therefore defined using the object "#", hash
+character. In cases where the documentation is not supposed to be
+exported, the tripple hash can be used, i.e. "###".
 
-Examples:
-first is program option @ 0
-second is program option @ 1
-stdout print first , “ * “ , second , “ = “ , first * second ,
-... newln
+### Scanner syntax in extended Backus-Naur format:
+    (* All names below ending with “-token” are entities returned by
+       the scanner *)
+    program = { line } ;
+    line = { token } , newln , line-continuation , line-indented ;
+	line-continuation = { '...' , { token } , newln }
+	line-indented = { indent-token , line }
+    indent-token = { ? tab ? } ;
+    token-sequence = { { token-separator } ,  symbol } ;
+    token-separator = ( ? tab ? | ? space ? ) ;
+    newln = ? new line ? , { ? new line ? } ;
+    newln-token = newln ;
+    token = number-token | string-token | comment ;
+    number-token = [ '-' ] , ( dec-real )
+	    | ( '0x' , hex-real )
+	    | ( '0o' , oct-real )
+	    | ( '0b' , bin-real ) ;
+    bin-real = bin-unsigned , [ '.' , bin-unsigned ] , [ 'E' , bin-unsigned ] ;
+    oct-real = oct-unsigned , [ '.' , oct-unsigned ] , [ 'E' , oct-unsigned ] ;
+	dec-real = dec-unsigned , [ '.' , dec-unsigned ] , [ 'E' , dec-unsigned ] ;
+    hex-real = hex-unsigned , [ '.' , hex-unsigned ] , [ 'E' , hex-unsigned ] ;
+    dec-unsigned = dec-digit , { dec-digit } ;
+    hex-unsigned = hex-digit , { hex-digit} ;
+    oct-unsigned = oct-digit , { oct-digit } ;
+    bin-unsigned = bin-digit , { bin-digit } ;
+    bin-digit = '0' | '1' ;
+    oct-digit = bin-digit | '2' | '3' | '4' | '5' | '6' | '7' ;
+    dec-digit = oct-digit | '8' | '9' | ' ;
+    hex-digit = dec-digit | 'a' | 'b' | 'c' | 'e' | 'f'  ;
+    string-token = ( '”' , { valid-consecutive-char } , '”' ) 
+        | ( valid-first-char , { valid-consecutive-char } ) ;
+    valid-first-char = ? printable chars except ”
+	    - 0 1 2 3 4 5 6 7 8 9 ? ;
+    valid-consecutive-char = ? printable chars except “ ?
+
+### Parser syntax:
+    (* All names below ending with “-token” comes from the scanner *)
+    object-create = [ scope ] , object-instance , [ object-parameter ] ;
+	scope = object
+	object-instance = object
+	object-parameter = object
+	object = value | string | object-reference
+	object-reference = string
+
+### Examples:
+    first is program option @ 0
+    second is program option @ 1
+    stdout print first , “ * “ , second , “ = “ , first * second ,
+    ... newln
 
 Scope
 -----
-A scope is given by an object name. What other languages call
-“namespace”, are in Sisdel just a container of objects. A sequence of
-object names will refine the intended scope. I.e., “a b c” would mean
-“in object a, there is object b, wherein there is object c”. The last
-object in such a sequence is typically a message object.  The language
-is heavily scope oriented, where a white-space is the scope
-operator. It also supports the following kinds of functions:
-unary-operator: Operates on the scope, i.e. on the left hand side.
-binary-operator: Operates on the scope as its left hand side, and
-expects one parameter as its right hand side.  Scope itself is an
-unary operator, returning itself as contained in its parent. Assuming
-“myscope” is a scope, and “my-operator” is a binary operator, the
-following code: myscope my-operator “a parameter” is read as: myscope,
-returns itself making “my-operator” accessible. my-operator then uses
-this scope and then applies “a parameter” on it.  Everything in the
-language is centered around “value”. Values as per Sisdel definition
-means something that has the following properties: Lives in a scope Is
-created from another value, which could be an operator invocation
-Unit, indicates high level compatibility Coding, indicates how the
-data area of the value is interpreted Data, the actual value
+<Merge this into namespace chapter above>
 
-Example source:
-repeat-message is binary-operator
-	doc head-line “Repeat left-hand side right-hand side number of times”
-	self repetitions-of print param
-myRecord is set-of ( name is string UTF8 , age is integer unsigned , times )
+Sisdel is heavily scoped. Each token creates a new scope, each new
+line resets scope to the same scope as the beginning of the line. When
+indenting, the scope created by the whole line preceding the
+indentation defines the scope for any following indented lines. And
+this can be done recursively, creating a scope hierarchy.
 
-Sisdel overview
----------------
-The following buzz words can summarize Sisdel: Class-less object
-oriented language with some limitations, e.g. no inheritance.
-Functional (declarative) by default, but with limited support for
-mutable values.  Strongly typed with type inference.  Supports
-parallel programming using threads, SMP and distribution.  Implements
-security features using security tokens and signatures.  Uses
-checksums to detect changed objects.  Supports late decision of what
-is interpreted and what is compiled, with no source code changes
-needed.  Keeps track of dependencies and making them visible in the
-language.  Interfaces are auto-generated with enough information to
-enable good optimization support.  Supports constraints.  For each
-bullt above a corresponding sub-chapter will explain it in more
-detail.  Object model Sisdel is not a truly object oriented language,
-although it has something it calls objects. There are no
-classes. Instead, there are objects that act as object factories.
-Inheritance is also not supported. The type inference is meant to
-replace this, which by default means that there is a looser definition
-of type compatibility. It is however possible to place additional
-constraints which could mimic the limitations inheritance would put on
-type usage.  There is also no overloading. Using type inference types
-does not need to be specified. This should give enough flexibility
-that there should be few cases when overloading will be missed.  All
-function calls uses value passing. This means that no references are
-being passed for a function call. Sisdel may however choose to use
-reference whenever it doesn't change the semantics if this will
-produce a more optimized code.  Functional Everything in Sisdel is
-declarative unless otherwise specified. This means that loops does not
-mean that the code actually should implement a loop, but rather should
-be interpreted as “for this range the following should apply”. This
-gives better optimization and possibility to implement parallell
-algorithms automatically.  When states, or mutable values, are
-actually needed they can be used in Sisdel with the limitation that
-these cannot be exported by other means than as a snapshot value given
-in a function call.  Everything in Sisdel are objects in Sisdel's
-definition of the term. Functions are objects, and can therefore
-implement mutable values. Each call to such a function might produce
-different results even when the same set of argument values is
-used. Sisdel will in this case treat each function call as though you
-are calling different functions. This is similar to what Haskell calls
-monads.  Sisdel uses promises for return values to make function calls
-less synchronous. This means that there are no guarantees that a
-functional succeeded when a receiving a return value. When the return
-value is being looked at the function success or fail will be
-visible. This is implemented as special values that the return value
-can have.
+Each token is also an object. Even an immediate constant, like "1", is
+an object and can be assigned meta-data like unit. When the
+interpreter reads a token, it creates an object. This object creation
+is done within the current scope, and can optionaly have an argument. The
+created object will then be the scope for the next object creation and
+so on until a new-line with no following indentation occurs.
+
+Undefined object names are objects as well, which is used by the
+object "is". "is" expects current scope, i.e. left hand side, to be an
+undefined object name, while the expected argument can be
+anything. "is" will then define the current scope to contain
+everything within the argument.
+
+For example, the following:
+
+    greeting is "Greetings to you!"
+
+will create the object name "greeting" to refer to the string object
+"Greetings to you!". An interesting things about Sisdel is that you
+can always make this the reverse, like this:
+
+    "Greetings to you!" is greeting
+
+This will create the object "Greetings to you!", and assign it the
+value "greeting".
+
+The object "," can be used for creating a set. "," will merge current
+scope with its argument into a set. If "," is used repetively, the set
+is extended. I.e. "1 , 2 , 3" creates one set consisting of the
+objects "1", "2" and "3". If this set creation uses several lines, use
+"..." continuation token for this.
+
+It is also possible to create sets using indentation, e.g. we could
+assign the object i to contain the set of objects "1", "2" and "3"
+like this:
+
+    i is
+        1
+        2
+        3
+
+Note that the two following lines does different things:
+    weight is 5 unit kg
+	weight is ( 5 unit kg )
+
+The first line will define object "weight" to be a copy of object
+"5". It then creates a new, unnamed object based on a copy of "weight"
+and assigns the unit "kg" to it.
+
+The second line will define object "weight" to be a copy of the object
+created by the object "5" with the unit "kg".
+
+Argument
+--------
+
+An optional argument can be given both when importing a namespace as
+well as when invocing an operator. This argument is accessed by the
+"arg" namespace.
+
+Only one argument can be given, but this argument can be a container
+(set, array, sequence, etc) of things as a way of providing multiple
+arguments.
+
+The comma character is used to specify a set, which means that the
+following works as a way of specify several arguments:
+
+    add-all 3 , 5 , 7 , 10
+
+The type of the argument may be restricted further, if needed:
+
+        two-ints is ( set ( integer , size 2 ) )
 
 Type inference
 --------------
@@ -298,6 +460,29 @@ which also spans over public interfaces to make this possible.  The
 goal with Sisdel is that how and how much the code is parallellized is
 something that can be decided late, and also be changed without
 changing the core algorithm.
+
+Imperative programming
+----------------------
+
+Sisdel is functional by default, but it is possible to use imperative
+programming style as well. This is accomplished by setting the
+constraint "mutable" on an object. An object with this constraint can
+have snapshots, each such snapshot producing a snapshot
+object. Example:
+
+    integer myobj is mutable
+    myobj assign 1
+    print myobj snapshot
+    myobj assign 2
+    print myobj snapshot
+
+This will print "12" on the screen. Normally the order of the lines
+are not important, but when "snapshot" and "assign" are used, the
+order becomes important. Sisdel will adapt to this automatically.
+
+Due to type inference, the first line of code above can actually be
+omitted. The "assign" object expects a mutable object, which means
+that this constraint will be inferred to "myobj".
 
 Security model
 --------------
