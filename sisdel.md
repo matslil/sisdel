@@ -157,61 +157,152 @@ The foundation of Sisdel
 ------------------------
 Sisdel foundation consists of the following elements:
 1. Data
-2. Method
-3. Message
-4. Interface
-5. Scope
-6. Authenticity, integrity, privacy
-7. Access restriction
-8. License management
+2. Operator
+3. Restriction
+4. Transaction
+5. Module
 
-*Data* describes what is stored, how it is interpreted and what the
+### Data
+Data describes what is stored, how it is interpreted and what the
 legal sequence of it is.
 
-*Method* receives a message containing data and acts on it. It normally
+### Operator
+Operator receives a message containing data and acts on it. It normally
 produces data that is sent back again.
 
-*Message* is a collection of data and meta-data sent or received during
-a method invocation. Messages are asynchronous, i.e. a message may be
-sent to a method and the sender can perform other work while waiting
-for the answer.
+### Restriction
+Restriction describes when an expression is valid. When the
+restriction is not fullfilled, then the expression does not
+apply. Normally the compiler makes sure that the expression is simply
+not executed, but if this is too late, then this becomes a runtime
+error.
 
-*Interface* describes an abstraction of data or function. This enables
-several different implementations, since an interface puts further
-restrictions on possibilities than a certain implementation would have
-to do.
+There are several types of restrictions. It can be valid state
+transitions, requirements on variable values, requirement on certain
+author, license or current user, or access restriction like read-only,
+write-only or other restrictions on operations.
 
-*Scope* is a namespace, but with some more functionality. There are two
-types of scope: Lexical scope and transaction scope. The lexical scope
-is associated with how the code is written, i.e. in what order the
-parser find things. Transaction scope follows method invocations, and
-for each message being sent branches off, and for each message
-returned terminates.
+### Transaction
+When an operator is invoced, a transaction is created. This
+transaction is a branch from the current executing
+transaction. Arguments given in the operator call is added in the
+transaction scope,
 
-*Authenticity* is a certification of author. In order for the
-application to guarantee its operation, it needs to assert that all
-modules that it is made up of are written by the same author, or by a
-list of certified authors.
+When the called operator has finished successfully, the created
+transaction has been fulfilled, and the transaction will return a
+value. If the called operator fails, the created transaction
+fails and no value is returned. Unless the current transaction handles
+this failure, this will cause the current transaction to fail as well.
 
-*Integrity* is a certification that the code has been unaltered from
- when originally written, and is intended to protect against hacking.
+It is possible for the code to refer to the current transaction, and
+perform operations like checkpointing or applying restrictions on the
+current transaction. The most common type of restriction to apply to
+the current transaction is probably security tokens.
 
-*Privacy* is about protecting sensitive data, usually by encryption.
+### Module
+A Sisdel application is built out of one or more modules. The
+application always starts with a module being selected as the main
+module for the application. This module may then import or use other
+modules.
 
-Authenticity, integrity and privacy can use signing and encryption
-like PGP. The language does not dictate the technique, but enforces
-its use.
+A module is expected to be a versioned file or tree of files. Current
+implementation has support for GIT integration, but other versioning
+system should also be possible to use.
 
-*Access restriction* is a security token model to limit access to
+Importing a module means to include it during compile time, while
+using a module means to refer to the module during compile time, and
+include it during runtime.
+
+A compile module will keep track of what version of imported or used
+modules that was used. Only this version of the modules will be
+accepted when running the application.
+
+It is possible to specify upgrade path to allow the application to
+automatically use a newer version of used or imported modules. This is
+code specifying how to translate data from old version of the used or
+imported module to the new version. In order for the upgrade to be
+seemless all the old version of the public operators needs to be still
+defined but now accepting the new version of the data. If this is not
+true, then the application needs to be updated as well.
+
+Derived elements of Sisdel
+--------------------------
+1. Type
+2. Unit
+3. Scope
+4. Authenticity
+5. Privacy
+6. Access restriction
+7. License management
+
+### Type
+Type is simply a set of restrictions, including a restriction saying
+that it must be an operator or data. Operators and data can then
+inherit from this type. Types can be used not only as a convenient
+container of commonly used set of restrictions, but also to describe
+interfaces.
+
+### Unit
+Unit is a restriction that only describes compatibility when other
+means cannot. For example, it can be used to describe that two
+integers are not compatible since one of them has the unit kilograms
+and the other liters.
+
+Different units can however be compatible given that a translation is
+done. E.g., 1 kilogram would equal 1000 gram. This makes it possible
+to give a value with one unit, while the function expects another, but
+compatible, unit.
+
+### Scope
+Scope is data containing operators and data available for a certain
+context. There are two main types of scopes: Lexical scope which is
+determined by how the code is designed, and transactional scope which is
+determined by execution path. The language defines a new scope when an
+application is invoced, which is called the root scope, for each
+import being done, for each data being defined, when entering operator
+arguments and when in operator implementation.
+
+### Authenticity
+Authenticity is a certification of author. This is a restriction that
+can be used to assert that code is written by speific author. The
+current implementation for the check is to use GPG and SKS protocols,
+but could be done with other protocols as well. An authenticity
+restriction also implies an integrity restriction, i.e. a guarantee
+that the code has been unaltered by someone else than the original
+author.
+
+### Privacy
+Privacy is about protecting sensitive data. This restriction will
+guarantee that the information is not leaked outside current
+scope. This guarantee is more than simple compile or runtime error if
+code outside scope tries to peek into the information, it will also
+use encryption or other means to make sure the information is
+secure. Note that privacy restriction should only be used when
+necessary, since it will limit debugability and might also have some
+heavy performance costs. The current implementation would use GPG for
+the encryption.
+
+Note that privacy restriction expects a user context, meaning that a
+user context must first be created. This way many different privacy
+data can be created using the same user, and this specific user may
+still see all of this data. This user may therefore see all of this
+when debugging as well.
+
+### Access restriction
+Access restriction is a security token model to limit access to
 primarily data, but could restrict other things as well like
-interface, scope and methods. The restriction can be lexically or
+scope and operators. The restriction can be lexically or
 transactional, and can be limited by number of times of use.
 
-*License management* enforces the author to give each piece of code a
-license, and handles license compatibilities. Some licenses when mixed
-becomes new licenses, which the language handles and enforces. The
-language merely enforces to specify a license and specify how licenses
-mix.
+### License
+Sisdel requires that all code has a defined license. Each type of
+license has a compatiblity with other licenses, where two licenses
+being combined might create a third license which then could be the
+license for the application being built.
+
+License in the language is a restriction that can be used
+programmatically as well. It is possible to describe that certain data
+or operator must have a certain license.
 
 Food for thought
 ----------------
@@ -224,18 +315,18 @@ itself as an answer to what problems that needs to be solved.
 
 Types
 -----
-Types are data or method without any actual data or implementation,
-i.e. the meta-data part of Sisdel data. This is useful for not having
-to type all meta-data for all instances of data or methods that have
-similar or identical meta-data descriptions. It also makes it possible
-to talk about all the meta-data part of a data or method.
+Types are data or operator without any actual data or implementation,
+i.e. the meta-data part of Sisdel data or operator. This is useful for
+not having to type all meta-data for all instances of data or operators
+that have similar or identical meta-data descriptions. It also makes
+it possible to talk about all the meta-data part of a data or operator.
 
 A type can inherit other types to create a new type, even multiple
 inheritance is allowed. But the implementation is required by Sisdel
 to handle all possible types, and will generate a compile time error
 if any of the types would be illegal to use.
 
-Note that once data or method has been declared, other namespace may
+Note that once data or operator has been declared, other namespace may
 apply further restrictions on it when used from that namespace. Other
 namepace may not lift any existing restriction.
 
@@ -243,6 +334,8 @@ Haskell type "maybe". Can be "Nothing" or "Just <x>", meaning "no
 value" and "value <x>" respectively. Forces the programmer to always
 consider both alternatives whenever there are alternatives. Is this
 default type/sub-type?
+
+
 
 This is the tree of types being pre-defined by Sisdel:
 
@@ -272,7 +365,7 @@ type
  |    |-- elf-segment
  |    |-- alignment
  |
- |-- method
+ |-- operator
  |
  |-- nothing
  |
@@ -589,8 +682,8 @@ exported, the tripple hash can be used, i.e. "###".
 	  | unit-token ;
     indent-token = '\t' , { '\t' } ;
     newln = '\n' | '\r' ;
-    documentation-token = '#' , { ? any-char ? } , newln ;
-    comment-token = '###' , { ? any-char ? } , newln ;
+    comment-token = '#' , { ? any-char ? } , newln ;
+    documentation-token = '###' , { ? any-char ? } , newln ;
     number-token = [ '-' ] , ( dec-real )
 	    | ( '0x' , hex-real )
 	    | ( '0o' , oct-real )
@@ -731,10 +824,11 @@ unaltered form. This is typically done in after "use" statements. E.g.:
     use mymodule from https://sisdel-archive.org
     mymodule is authored-by "My Name <my.name@my-org.com>"
 
-Encryption can be enabled for single data entries or for methods or
-modules. Simple say "private" to enable it, e.g.:
+Encryption can be enabled for single data entries or for operators or
+modules. Simple say "private" to enable it, and specify user, e.g.:
     mydata is integer , private
-    mymodule is private
+    myuser is user "Legio Vegio <legio.vegio@vegio.org>"
+    mymodule is private myuser
 
 Trust Model
 -----------
@@ -746,7 +840,7 @@ required of the software to fully support the users expectations, and
 the users themselves might not be able to provide this information at
 the design stage. Most users however are capable of saying what they
 believe is a functional behavior as opposed to buggy behavior.  This
-is why trust model is introduced. They idea is a rapid prototyping
+is why trust model is introduced. The idea is a rapid prototyping
 approach, where a first hack of the software is done and then tested
 by the users. The users will then need to provide information about
 what is buggy behavior and what is functional behavior. This needs to
