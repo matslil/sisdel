@@ -49,6 +49,8 @@ vpath %.css $(SRCPATH)
 #vpath %.tp $(SRCPATH)/src   # Replaced by the %.c vpath below
 vpath %.c  $(SRCPATH)/src
 
+vpath default.latex $(SRCPATH)/templates
+
 # Needed when building unit tests
 vpath %.cc $(SRCPATH)/unit-test   # Sisdel unit tests
 vpath %.cc /usr/src/gtest/src     # GTest source, must be built with the same
@@ -112,27 +114,48 @@ override LIBS += -ldl
 
 # all: Makefile sisdel.o doc
 
+# Make documents in all supported formats, currently html and pdf
 doc: html pdf
+
+# Remove everything related to documentation
 distclean-doc: clean-doc
 	rm -f sisdel.{html,pdf}
-clean-doc:
-	rm -f type-hierarchy-graph.{svg,pdf}
 
+# Remove all intermediary files, saving only the final documentation
+clean-doc:
+	rm -f type-hierarchy-graph.{svg,pdf} sisdel.tex
+
+# "make html" is a short-hand for "make sisdel.html"
 html: sisdel.html
+
+# "make pdf" is a short-hand for "make sisdel.pdf"
 pdf: sisdel.pdf
 
-sisdel.pdf:  %.pdf:  %.md %.css sisdel.md type-hierarchy-graph.pdf
-sisdel.html: %.html: %.md %.css sisdel.md type-hierarchy-graph.svg
+# sisdel.pdf is built from sisdel.tex
+sisdel.pdf:  %.pdf : %.tex
 
-sisdel.pdf sisdel.html:
+# How to build the document file, same template regardless of output format
+sisdel.tex: %.tex: %.md %.css sisdel.md type-hierarchy-graph.pdf default.latex
+	pandoc -c $*.css --default-image-extension=pdf --data-dir=$(<D) -o $@ $<
+
+sisdel.html: %.html: %.md %.css sisdel.md type-hierarchy-graph.svg
 	pandoc -c $*.css --default-image-extension=$(suffix $@) --data-dir=$(<D) -o $@ $<
 
+# Convert LaTex to pdf
+%.pdf: %.tex
+	pdflatex $<
+
+# LaTex does not support svg format, so svg images are converted to pdf
+# LaTex is used as an intermediate format by pandoc when producing pdf
+# documents
 %.pdf: %.svg
 	rsvg-convert -f pdf -o $@ $<
 
+# Compile directional graph text file to svg
 %.svg: %.dot
 	dot -Tsvg $< > $@
 
+# Run unit test
 test: Makefile check_sbucket
 
 # How to create C (and header) source files from a tracepoint template file
