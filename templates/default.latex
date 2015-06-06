@@ -1,11 +1,23 @@
 \documentclass[$if(fontsize)$$fontsize$,$endif$$if(lang)$$lang$,$endif$$if(papersize)$$papersize$,$endif$$for(classoption)$$classoption$$sep$,$endfor$]{$documentclass$}
 \usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\Large\bfseries}{\thesection}{1em}{}[{\titlerule[0.8pt]}]
 \newcommand{\sectionbreak}{\clearpage}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{amssymb,amsmath}
 \usepackage{ifxetex,ifluatex}
 \usepackage{fixltx2e} % provides \textsubscript
+\usepackage{etoolbox}
+% Attempts to avoid page breaks in the middle of an enumeration
+\BeforeBeginEnvironment{enumerate}{\par\noindent\begin{minipage}{\linewidth}}
+\AfterEndEnvironment{enumerate}{\end{minipage}\par\addvspace{\topskip}}
+% Attempts to avoid page breaks in the middle of an itemize
+\BeforeBeginEnvironment{itemize}{\par\noindent\begin{minipage}{\linewidth}}
+\AfterEndEnvironment{itemize}{\end{minipage}\par\addvspace{\topskip}}
+% Attempts to avoid page breaks in the middle of a verbatim
+\BeforeBeginEnvironment{verbatim}{\par\noindent\begin{minipage}{\linewidth}}
+\AfterEndEnvironment{verbatim}{\end{minipage}\par\addvspace{\topskip}}
 % use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
