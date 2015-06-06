@@ -1,17 +1,22 @@
-Simple Syntax Dependency Language (Sisdel)
-==========================================
+% Simple Syntax Dependency Language (Sisdel)
+% Mats Liljegren
 
 Sisdel is an experimental language intended to examine how to make
 dependency tracking as accessible, useful and simple as possible.
 
-Why Sisdel?
------------
+Why Sisdel? {#whysisdel}
+===========
 Sisdel is intended to deal with some more "modern" problems that
 programming languages needs to deal with today:
+
 * Security. Code floats around the Internet and it can sometimes be
   hard to know what code to trust. This can either be whether the code
   is malicious or not or it can be whether it has been well tested or
   not.
+* Privacy. We share personal data in order to get service back. But we
+  want to know that this data is not used in a way we do not approve
+  to. This includes malicious developers as well as evesdropping third
+  parties.
 * License. All code is published with a certain license, and when code
   with different licenses are mixed, the application will have a
   license that is mixed from the code licenses. This can be hard to
@@ -19,28 +24,47 @@ programming languages needs to deal with today:
   number of combinations.
 * Dependency. Having dependency as a first class citizen in the
   language makes a lot about the environment visible. Error messages
-  can be made more intelligent when some trace about where a certain
+  can be made more intelligent when some trace about what a certain
   value was calculated from, different parts of the code can by
   themselves both declare dependency as well as check for dependency
-  giving the programmer a new tool for designing his application.
+  giving the programmer a new tool for designing his or her
+  application.
 * Concurrency. Processing power is increased more by adding
   concurrency in the hardware rather than making the processor
   faster. The language should therefore encourage concurrent code.
 * Distributed. Applications are now distributed among one or several
   clients and servers all working together. The language should make
-  this easy, handling problems like reconnecting from a lost connection.
+  this easy, handling problems like reconnecting from a lost
+  connection. The language should help the developer to take a late
+  decision on what node that should perform what work, preferable this
+  should be a runtime decision based on current load.
 * Time. There needs to be a conception of time in the language. It
   must be possible to describe it in several ways, calendar time,
-  passed time, execution time, ...
+  passed time, execution time and ordering requirements. All these
+  variants of time should be compatible with each other, so that
+  different parts using different notations can still work together.
 
 Some old problems that still apply:
-* It must be able to split the design into several modules, with well
-  defined interfaces between them.
-* It must be possible to describe the design in several ways:
-  - Event based
-  - State machine
-  - Declaratively
-  - Logic programming, similar to Prolog
+
+ *  It must be able to split the design into several modules, with well
+    defined interfaces between them.
+ *  It must be possible to describe the design in several ways:
+    - Event machine
+    - State machine
+    - Declaratively
+    - Logic programming, similar to Prolog
+
+Language Design
+===============
+This chapter describes the background behind the chosen language
+design. It starts by a section describing design principles, which is
+a collection of wisdom collected through past programming
+experience. This is basically lessons learned from previous and
+current programming languages.
+
+The following chapter, goals, describes further goals that Sisdel
+tries to accomplish in addition to what the chapter [Why
+Sisdel?](#whysisdel) specifies.
 
 Principles
 ----------
@@ -76,6 +100,7 @@ order of priority. The numbering is only for easy reference.
 
 Goals
 -----
+
 1. The language syntax should be easy to learn and master.
 2. It should be easy to understand the design when reading the code.
 3. It should require significant effort to write code that isn't well
@@ -91,6 +116,7 @@ Goals
 
 Features
 --------
+
 1. It shall be possible from outside as well as from the code to save
    the complete internal state of the program. This state shall be
    complete enough that it is possible to restart the program from
@@ -122,6 +148,7 @@ There are many ways of implementing the goals above. This chapter
 describes the way chosen for Sisdel.
 
 The design decisions are numbered for easy reference:
+
 1. Use functional oriented programming by default.
    *Rationale:* Functional oriented programming does not use mutable
    states, which supports principle 6.
@@ -154,8 +181,10 @@ The design decisions are numbered for easy reference:
    *Rationale:* This is similar to how natural language works.
 
 The foundation of Sisdel
-------------------------
+========================
+
 Sisdel foundation consists of the following elements:
+
 1. Data
 2. Operator
 3. Restriction
@@ -225,8 +254,10 @@ seemless all the old version of the public operators needs to be still
 defined but now accepting the new version of the data. If this is not
 true, then the application needs to be updated as well.
 
-Derived elements of Sisdel
---------------------------
+Type hierarchy in Sisdel
+------------------------
+![Hierachy](type-hierarchy-graph "Sisdel type hierarchy")
+
 1. Type
 2. Unit
 3. Scope
@@ -395,50 +426,53 @@ relationship. This means that you do not specify a type as being
 used to denote a type that can be any of its sub-types. This can be
 useful in determining whether a type has specified how it is stored.
 
-Description of each type:
-*Thing* - The top-most type. It serves the purpose of saying "any
-	type".
-*Constraint* - Puts restriction on a thing, limiting what operations
-	that are allowed. Constraints can only be added, never be removed.
-*Unit* - A tag placed on a type to describe compatibility. The unit is
-	unique per type, i.e. same unit name used on incompatible types
-	means different things. Unit does not affect what code is
-	compatible with the type, only what other type that can be
-	calculated together with this type.
-*Security token* - A token describing access priviledges, i.e. what
-	operations that are allowed on that thing.
-*License* - Describes what code can be mixed with what other code. It
-	is also used for calculating the resulting license for the
-	application. Since some license combinations are disallowed,
-	license works like a constraint as seen from Sisdel's view.
-*Operator* - Code which optionally accepts an argument, and when
-	executed produces a thing.
-*Value* - Data that isn't natively interpreted as part of Sisdel
-	itself, but rather data that is part of the program itself.
-*Number* - Any number including integers and floats.
-*Mutable-number* - Like number, but allowed to change value when the
-	application executes.
-*String* - Unicode UTF-8 string.
-*Mutable-string* - Like string, but allowed to change value when the
-	application executes.
-*Documentation* - String attached to code to describe the code.
-*Set* - An unordered collection of things. A set can be iterated, but
-	there is no concept of "next" and "previous".
-*Map* - A set of key value pairs, where key is used to find a certain
-	value.
-*Dependency* - Describes from other things a certain thing was
-	derived.
-*Namespace* - A set of symbol name to thing associations. This can
-	give things names. If a thing is not referenced by any namespaces,
-	then it is said to be anonymous.
-*Referemce* - Similar to namespace, but is a single symbol name to
-	thing association.
-*Stream* - An ordered collection which only has a "next" entry, no
-	"previous". Especially useful for describing cases where a read
-	alters a state, e.g. reading the next random number from a random
-	number device.
-*Ordered-set* - An ordered collection of things, having both "next" and a
-	"previous" entry. Note that this includes linked list.
+Type             Description
+---------------- --------------------------------------------------------------
+*Thing*          The top-most type. It serves the purpose of saying "any
+                 type".
+*Constraint*     Puts restriction on a thing, limiting what operations
+                 that are allowed. Constraints can only be added, never
+                 be removed.
+*Unit*           A tag placed on a type to describe compatibility. The unit is
+                 unique per type, i.e. same unit name used on incompatible types
+                 means different things. Unit does not affect what code is
+                 compatible with the type, only what other type that can be
+                 calculated together with this type.
+*Security token* A token describing access priviledges, i.e. what
+                 operations that are allowed on that thing.
+*License*        Describes what code can be mixed with what other code. It
+                 is also used for calculating the resulting license for the
+                 application. Since some license combinations are disallowed,
+                 license works like a constraint as seen from Sisdel's view.
+*Operator*       Code which optionally accepts an argument, and when
+                 executed produces a thing.
+*Value*          Data that isn't natively interpreted as part of Sisdel
+                 itself, but rather data that is part of the program itself.
+*Number*         Any number including integers and floats.
+*Mutable-number* Like number, but allowed to change value when the
+                 application executes.
+*String*         Unicode UTF-8 string.
+*Mutable-string* Like string, but allowed to change value when the
+                 application executes.
+*Documentation*  String attached to code to describe the code.
+*Set*            An unordered collection of things. A set can be iterated, but
+                 there is no concept of "next" and "previous".
+*Map*            A set of key value pairs, where key is used to find a certain
+                 value.
+*Dependency*     Describes from other things a certain thing was derived.
+*Namespace*      A set of symbol name to thing associations. This can
+                 give things names. If a thing is not referenced by any
+                 namespaces, then it is said to be anonymous.
+*Reference*      Similar to namespace, but is a single symbol name to
+                 thing association.
+*Stream*         An ordered collection which only has a "next" entry, no
+                 "previous". Especially useful for describing cases where a read
+                 alters a state, e.g. reading the next random number from a
+                 random number device.
+*Ordered-set*    An ordered collection of things, having both "next" and a
+                 "previous" entry. Note that this includes linked list.
+
+Table: Type pre-defined by sisdel-v1
 
 Namespace
 ---------

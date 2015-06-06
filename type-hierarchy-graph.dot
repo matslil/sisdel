@@ -1,0 +1,21 @@
+digraph "Sisdel elements" {
+	// Start with class hierarchy
+	rankdir = RL // Since inheritance arrows point at parent
+	ranksep = 2 // More space to make it more readable
+	edge [arrowhead=empty] // UML: inherit
+	node [shape=rectangle] // UML: class
+
+	// These are the basic elements
+	{ data type operator message constraint transaction module } -> thing
+
+	// These are derived elements
+	{ scope value string } -> data
+	{ unit storage "valid-value" } -> type
+	{ size format endian alignment private } -> storage
+	{ allow deny require } -> constraint
+	{ author access token license } -> require
+
+	// Use relations
+	edge [arrowhead=normal]
+	{ allow deny } -> thing
+}

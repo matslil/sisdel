@@ -1,0 +1,12 @@
+body {
+    // Maximum number of columns
+    -webkit-column-count: 3;
+    -moz-column-count: 3;
+    column-count: 3;
+
+    // Minimum width for each column
+    -webkit-column-width: 480px;
+    -moz-column-width: 480px;
+    column-width: 480px;
+    column-gap: 40px;
+}

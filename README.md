@@ -33,3 +33,14 @@ Makefile      Makefile to build everything. Invoke it from a separate
 	      file out.
 src/	      Directory where the source code is.
 unit-test/    Directory where the unit test implementation is.
+
+Ubuntu requirements for building documentation
+----------------------------------------------
+ * pandoc
+ * dotty
+ * graphviz
+ * texlive-latex-base
+ * texlive-latex-recommended
+ * texlive-latex-extra
+ * texlive-fonts-recommended
+ * librsvg2-bin

@@ -42,6 +42,9 @@ SHELL = $(warning Building $@$(if $<, (from $<))$(if $?, ($? newer)))$(OLD_SHELL
 endif
 
 vpath %.cc $(SRCPATH)/src
+vpath %.md $(SRCPATH)
+vpath %.dot $(SRCPATH)
+vpath %.css $(SRCPATH)
 
 #vpath %.tp $(SRCPATH)/src   # Replaced by the %.c vpath below
 vpath %.c  $(SRCPATH)/src
@@ -105,9 +108,30 @@ override LIBS += -llttng-ust
 override LIBS += -lrt
 override LIBS += -ldl
 
-.PHONY: all clean lint
+.PHONY: all clean lint doc html pdf clean-doc distclean-doc
 
-# all: Makefile sisdel.o
+# all: Makefile sisdel.o doc
+
+doc: html pdf
+distclean-doc: clean-doc
+	rm -f sisdel.{html,pdf}
+clean-doc:
+	rm -f type-hierarchy-graph.{svg,pdf}
+
+html: sisdel.html
+pdf: sisdel.pdf
+
+sisdel.pdf:  %.pdf:  %.md %.css sisdel.md type-hierarchy-graph.pdf
+sisdel.html: %.html: %.md %.css sisdel.md type-hierarchy-graph.svg
+
+sisdel.pdf sisdel.html:
+	pandoc -c $*.css --default-image-extension=$(suffix $@) --data-dir=$(<D) -o $@ $<
+
+%.pdf: %.svg
+	rsvg-convert -f pdf -o $@ $<
+
+%.svg: %.dot
+	dot -Tsvg $< > $@
 
 test: Makefile check_sbucket
 
@@ -125,7 +149,7 @@ test: Makefile check_sbucket
 #	$(C++) -std=c++11 -MMD -MF $(@:.o=.d) -c $(CCFLAGS) -o $@ $<
 
 # Clean all temporary files
-clean:
+clean: clean-doc
 	rm -f $(addsuffix .[odchis],$(basename $(SRCFILES_ALL))) $(addsuffix .ii,$(basename $(SRCFILES_ALL)))
 
 # Create html files describing potential problems with the code
