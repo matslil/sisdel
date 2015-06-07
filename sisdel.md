@@ -2,71 +2,128 @@
 % Mats Liljegren
 
 Sisdel is an experimental language intended to examine how to make
-dependency tracking as accessible, useful and simple as possible.
+dependency tracking as accessible, useful and simple as possible. It
+also intends to broaden the scope to also include modern challenges
+such as security, privacy, license conforment, concurrency and
+distributed design.
 
 Why Sisdel? {#whysisdel}
 ===========
-Sisdel is intended to deal with some more "modern" problems that
-programming languages needs to deal with today:
+Sisdel is data driven, dependency tracking and declarative
+language. It has evolved from the observation that data survives way
+longer than algorithm and many more problems stems from data rather
+than algorithms.
 
-* Security. Code floats around the Internet and it can sometimes be
+Once you have collected data around something you want to save it for
+the future. But how do you know that you can still correctly interpret
+old data, so that you can compare it to new data being collected using
+more modern methods and storage?
+
+There is also the question of dependency. When an application returns
+some data that appears out of the ordinary, it is often quite valuable
+to be able to backtrack how that data was calculated, or at least,
+what other data it was calculated from.
+
+Some data might also have privacy concerns. Contacts might be fine to
+share with close friends, but not to total strangers. How do you
+ensure this when a third party provides the service of storage and
+access to this data?
+
+Concurrency problems usually stems from how data is handled, since the
+usual bottleneck is that too much data is being shared too often. It
+is therefore important to keep data as local as possible, to avoid
+unnecessary sharing.
+
+Code itself is also data, and this data has trust issues. How do you
+know that the code is robust enough for your intended application?
+This is often a balance between functionality and correctness. Using a
+central repository for all language modules, this can also be used to
+store trust related meta-data about these modules.
+
+Code also has an author, and some companies might want to restrict
+what author or authors that are allowed to provide modules to the
+companies application. This can be for trustness reasons or business
+reasons.
+
+The author for the code also decides a license. When an application
+consists of several modules collected from the Internet, all their
+respective licenses combines and dictates requirements on the
+application's license. How do you ensure this is done correctly?
+
+Note that data created by a user of an application can also have an
+author and a license. If so, Sisdel can help in ensuring the license
+is obeyed as long as the license can be described in a way Sisdel can
+understand.
+
+Programming language challenges
+-------------------------------
+My first intention with Sisdel was to create a better "make" language,
+hence its name. With time, the scope has broaden to not only solve
+dependency problems. My current list of things I want Sisdel to be
+good at is:
+
+* *Security*. Code floats around the Internet and it can sometimes be
   hard to know what code to trust. This can either be whether the code
   is malicious or not or it can be whether it has been well tested or
   not.
-* Privacy. We share personal data in order to get service back. But we
+* *Privacy*. We share personal data in order to get service back. But we
   want to know that this data is not used in a way we do not approve
   to. This includes malicious developers as well as evesdropping third
   parties.
-* License. All code is published with a certain license, and when code
+* *License*. All code is published with a certain license, and when code
   with different licenses are mixed, the application will have a
   license that is mixed from the code licenses. This can be hard to
   deal with, since there can be a number of licenses and even greater
   number of combinations.
-* Dependency. Having dependency as a first class citizen in the
+* *Dependency*. Having dependency as a first class citizen in the
   language makes a lot about the environment visible. Error messages
   can be made more intelligent when some trace about what a certain
   value was calculated from, different parts of the code can by
   themselves both declare dependency as well as check for dependency
   giving the programmer a new tool for designing his or her
   application.
-* Concurrency. Processing power is increased more by adding
+* *Concurrency*. Processing power is increased more by adding
   concurrency in the hardware rather than making the processor
   faster. The language should therefore encourage concurrent code.
-* Distributed. Applications are now distributed among one or several
+* *Distributed*. Applications are now distributed among one or several
   clients and servers all working together. The language should make
   this easy, handling problems like reconnecting from a lost
   connection. The language should help the developer to take a late
   decision on what node that should perform what work, preferable this
   should be a runtime decision based on current load.
-* Time. There needs to be a conception of time in the language. It
+* *Time*. There needs to be a conception of time in the language. It
   must be possible to describe it in several ways, calendar time,
   passed time, execution time and ordering requirements. All these
   variants of time should be compatible with each other, so that
   different parts using different notations can still work together.
-
-Some old problems that still apply:
-
- *  It must be able to split the design into several modules, with well
-    defined interfaces between them.
- *  It must be possible to describe the design in several ways:
+* *Modularity*. It must be able to split the design into several
+  modules, with well defined interfaces between them.
+* *Design freedom*. It must be possible to describe the design in several ways:
     - Event machine
     - State machine
     - Declaratively
-    - Logic programming, similar to Prolog
+    - Logically, similar to Prolog
+
+The above together with some firm believes regarding language design
+is what has led to Sisdel.
 
 Language Design
 ===============
-This chapter describes the background behind the chosen language
-design. It starts by a section describing design principles, which is
-a collection of wisdom collected through past programming
-experience. This is basically lessons learned from previous and
-current programming languages.
+When describing a design it is customary to first describe the
+intended use cases. For Sisdel, this is kind of tricky, since on a
+higher level this is quite obvious: Write code that when executed does
+something. On a lower level, only the sky is the limit, and Sisdel
+should put no restriction on its use unless necessary.
 
-The following chapter, goals, describes further goals that Sisdel
-tries to accomplish in addition to what the chapter [Why
-Sisdel?](#whysisdel) specifies.
+The chapter [Why Sisdel?](#whysisdel) could be seen as a number of use
+scenarios that the language intends to fulfill. The next section in
+this chapter, [Principles](#principles), gives some collected wisdom
+with current programming languages.
 
-Principles
+Next section, [Design decisions](#designdecisions), describes design
+decisions that have been made and the rationale for each of them.
+
+Principles {#principles}
 ----------
 Principles are statements that should guide the langauge design. These
 are seen as truths for having the best design, and have no internal
@@ -92,66 +149,20 @@ order of priority. The numbering is only for easy reference.
 5. Only interfaces shall be inherited, not algorithm.
    *Rationale:* Inheriting algorithm can easily result in subtle
    issues since the inherited algorithm wasn't written for the new
-   interace.
+   interface.
 6. Mutable states shall only be used where strictly necessary.
    *Rationale:* Mutable states make correctness validation harder, and
    should therefore be kept to the necessary minimum. It also makes
    the code easier to understand.
 
-Goals
------
-
-1. The language syntax should be easy to learn and master.
-2. It should be easy to understand the design when reading the code.
-3. It should require significant effort to write code that isn't well
-   behaving, intuitive, secure and robust.
-4. When errors do occur, it should be easy to understand what made the
-   error to occur.
-5. The language should be a generic language, suitable for compiled
-   applications, shell scripts as well as build scripts.
-6. It should have good support for cloud computing, where different
-   parts of the code runs on different hardware in a network.
-7. It should offer good parallellization of execution.
-8. The language should offer a robust and simple way for code re-use.
-
-Features
---------
-
-1. It shall be possible from outside as well as from the code to save
-   the complete internal state of the program. This state shall be
-   complete enough that it is possible to restart the program from
-   this state. If communicating with external entities, the program
-   shall be able to tell the external entities from where it is
-   restarting. If the external entities supports this kind of restart,
-   e.g. because they are implemented in Sisdel, a restart of a
-   complete system shall be possible.
-2. It shall be possible, from outside as well as from the code, to ask
-   how a certain value was calculated. How fine grained the answer
-   will be shall be determined by code and the request.
-3. Value dependencies shall be tracked in a way that correct value
-   types can always be determined at compile time, even when re-using
-   code.
-4. It shall be possible to store code elements in a cloud manner,
-   where other programs may be re-using these code elements in their
-   implementation. Each element shall have meta-data indicating what
-   kind of characteristics can be expected from the code as well as
-   how robust and well-tested it is.
-5. Language syntax shall be as simple as possible, to make it as easy
-   to learn as possible and also providing the least amount of
-   surprises. The lazy programmer shall get a robust and easy to
-   understand program, while it should require significant efforts to
-   make the program unstable and hard to read.
-
-High-level design decisions
----------------------------
-There are many ways of implementing the goals above. This chapter
-describes the way chosen for Sisdel.
-
-The design decisions are numbered for easy reference:
+Design decisions {#designdecisions}
+----------------
+This section describes design decisions taken for Sisdel. The design
+decisions are numbered for easy reference:
 
 1. Use functional oriented programming by default.
-   *Rationale:* Functional oriented programming does not use mutable
-   states, which supports principle 6.
+   *Rationale:* Functional oriented programming tends to create less
+   unneeded complexity, and should therefore be the default.
 2. Make imperative oriented programming an option.
    *Rationale:* There are cases when it is easier to talk about states
    rather than stateless functions. Therefore the language should have
@@ -182,40 +193,69 @@ The design decisions are numbered for easy reference:
 
 The foundation of Sisdel
 ========================
+The following types are the foundation of Sisdel:
 
-Sisdel foundation consists of the following elements:
+* Data
+* Type
+* Operator
+* Message
+* Constraint
+* Transaction
+* Module
 
-1. Data
-2. Operator
-3. Restriction
-4. Transaction
-5. Module
+![Hierachy](type-hierarchy-graph "Sisdel type hierarchy")
 
 ### Data
 Data describes what is stored, how it is interpreted and what the
 legal sequence of it is.
 
+### Type
+A type describes how something is to be interpreted. It tells whether
+Sisdel should treat an identifier as being data, operator, etc. It
+also says whether one piece of data is compatible with another, and
+also how to parse the data. A string might for example be stored as
+pure ASCII string or as UTF-8 Unicode string. The type will tell which
+it is so the code knows how to read the string.
+
+If one type is expected but another is provided, a typecast can
+occur. These can be either implicit or explicit. Only typecast being
+defined can be implicit, all typecasts that Sisdel offers built-in
+must be called explicitly.
+
 ### Operator
 Operator receives a message containing data and acts on it. It normally
 produces data that is sent back again.
 
-### Restriction
-Restriction describes when an expression is valid. When the
-restriction is not fullfilled, then the expression does not
-apply. Normally the compiler makes sure that the expression is simply
-not executed, but if this is too late, then this becomes a runtime
-error.
+### Message
+When an operator is called with parameters, these parameters are
+packed into a message by Sisdel and then sent asynchronously to the
+operator. When the calling code needs the return code, which in simple
+cases could be a simple success or fail, it will wait for a reply
+signal from the called operator. This enables Sisdel to schedule other
+activities in between to ensure better support for multiple processor
+or nodes.
 
-There are several types of restrictions. It can be valid state
-transitions, requirements on variable values, requirement on certain
-author, license or current user, or access restriction like read-only,
-write-only or other restrictions on operations.
+The message sent to the operator is called "request" and the message
+received from the operator is called "reply". The name for "request"
+and "reply" is the same as for the operator.
+
+### Constraint
+Constraints can be put on anything to describe limitations of its
+use. These limitations are typically not intended to describe what can
+or cannot be done, but rather what is allowed. Constraints describe
+security, privacy and optimization concerns.
+
+When a thing does not fulfill the constraints it becomes invalidated,
+which means that Sisdel will keep looking for something else to be
+matched. This can be used as a technique to hide things, e.g. hide an
+operator that for a specific use case is non-optimal and allow Sisdel
+to search for a better one.
 
 ### Transaction
 When an operator is invoced, a transaction is created. This
 transaction is a branch from the current executing
-transaction. Arguments given in the operator call is added in the
-transaction scope,
+transaction. The transaction contains the current execution scope,
+which includes arguments given to the operator.
 
 When the called operator has finished successfully, the created
 transaction has been fulfilled, and the transaction will return a
@@ -223,10 +263,15 @@ value. If the called operator fails, the created transaction
 fails and no value is returned. Unless the current transaction handles
 this failure, this will cause the current transaction to fail as well.
 
-It is possible for the code to refer to the current transaction, and
-perform operations like checkpointing or applying restrictions on the
-current transaction. The most common type of restriction to apply to
-the current transaction is probably security tokens.
+The code can add data to the current transaction, which is typically
+used for security tokens. This way of supplying arguments to an
+operator is useful since some operators might not care about security
+tokens and will therefore not forward them, but the transaction itself
+will.
+
+A security check can then let a transaction fail due to failing
+security check. Failing a transaction is similar to generating an
+exception in object oriented languages.
 
 ### Module
 A Sisdel application is built out of one or more modules. The
@@ -256,7 +301,6 @@ true, then the application needs to be updated as well.
 
 Type hierarchy in Sisdel
 ------------------------
-![Hierachy](type-hierarchy-graph "Sisdel type hierarchy")
 
 1. Type
 2. Unit

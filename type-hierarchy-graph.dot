@@ -11,6 +11,7 @@ digraph "Sisdel elements" {
 	// These are derived elements
 	{ scope value string } -> data
 	{ unit storage "valid-value" } -> type
+	{ request reply } -> message
 	{ size format endian alignment private } -> storage
 	{ allow deny require } -> constraint
 	{ author access token license } -> require

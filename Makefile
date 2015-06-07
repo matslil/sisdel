@@ -123,7 +123,7 @@ distclean-doc: clean-doc
 
 # Remove all intermediary files, saving only the final documentation
 clean-doc:
-	rm -f type-hierarchy-graph.{svg,pdf} sisdel.tex
+	rm -f type-hierarchy-graph.{svg,pdf} sisdel.{tex,log,out,aux}
 
 # "make html" is a short-hand for "make sisdel.html"
 html: sisdel.html
@@ -131,8 +131,13 @@ html: sisdel.html
 # "make pdf" is a short-hand for "make sisdel.pdf"
 pdf: sisdel.pdf
 
-# sisdel.pdf is built from sisdel.tex
-sisdel.pdf:  %.pdf : %.tex
+# sisdel.pdf is built from sisdel.tex, this is debug version of sisdel.pdf
+# sisdel.pdf:  %.pdf : %.tex
+
+# sisdel.pdf build, release version
+sisdel.pdf: %.pdf: %.md %.css sisdel.md type-hierarchy-graph.pdf default.latex
+	pandoc -c $*.css --default-image-extension=$(suffix $@) --data-dir=$(<D) -o $@ $<
+
 
 # How to build the document file, same template regardless of output format
 sisdel.tex: %.tex: %.md %.css sisdel.md type-hierarchy-graph.pdf default.latex
