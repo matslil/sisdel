@@ -1,0 +1,83 @@
+//
+// Relations
+//
+digraph "Sisdel type relations" {
+	nodesep=0.5
+	ranksep=1.5
+	edge [arrowhead=normal]  // Use normal arrow head by default
+	node [shape=record]    // UML: class
+	
+	// dependency
+	thing -> dependencyAnchor [arrowhead="none";
+				   taillabel="*"]
+	dependencyAnchor -> thing [headlabel="*";
+				   label="derived from"]
+	dependencyAnchor -> dependency [arrowhead=none;style=dotted]
+	dependencyAnchor [shape=point;
+			  width=0.01;
+			  height=0.01]
+
+	// scope
+	thing -> scope [arrowhead=diamond;
+			headlabel="1";
+			taillabel="*";
+			label="defined by"]
+	
+	// type
+	thing -> type [arrowhead=normal;
+		       headlabel="*";
+		       taillabel="*";
+		       label="is of type"]
+	{ unit storage format } -> type [arrowhead=diamond;
+					 headlabel="1";
+					 taillabel="1"]
+	
+	// constraint
+	thing -> constraint [arrowhead=normal;
+			     headlabel="*";
+			     taillabel="*";
+			     label="constrained to"]
+	constraint -> private [arrowhead=normal;
+			       headlabel="*";
+			       taillabel="*"]
+	constraint -> "valid-value" [arrowhead=normal;
+				   headlabel="*";
+				   taillabel="*"]
+	constraint -> author [arrowhead=normal;
+			       headlabel="*";
+			       taillabel="*"]
+	constraint -> access [arrowhead=normal;
+			       headlabel="*";
+			       taillabel="*"]
+	constraint -> token [arrowhead=normal;
+			       headlabel="*";
+			       taillabel="*"]
+	constraint -> license [arrowhead=normal;
+			       headlabel="*";
+			       taillabel="*"]
+	
+	// transaction
+	transaction -> operator [arrowhead=diamond;
+				 headlabel="1";
+				 taillabel="1"]
+	{ request reply } -> transaction [arrowhead=diamond;
+				headlabel="1";
+				taillabel="1"]
+	
+	// module
+	module -> author [arrowhead=normal;
+			  headlabel="1";
+			  taillabel="*"]
+	module -> license [arrowhead=normal;
+			   headlabel="1";
+			   taillabel="*"]
+
+
+	//
+	// Node information
+	//
+
+	thing [
+		label="{thing|+ size\l+ alignment\l}"
+	]
+}

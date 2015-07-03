@@ -123,7 +123,7 @@ distclean-doc: clean-doc
 
 # Remove all intermediary files, saving only the final documentation
 clean-doc:
-	rm -f type-hierarchy-graph.{svg,pdf} sisdel.{tex,log,out,aux}
+	rm -f type-hierarchy-graph.{svg,pdf} type-relation-graph.{svg,pdf} sisdel.{tex,log,out,aux}
 
 # "make html" is a short-hand for "make sisdel.html"
 html: sisdel.html
@@ -135,16 +135,16 @@ pdf: sisdel.pdf
 # sisdel.pdf:  %.pdf : %.tex
 
 # sisdel.pdf build, release version
-sisdel.pdf: %.pdf: %.md %.css sisdel.md type-hierarchy-graph.pdf default.latex
-	pandoc -c $*.css --default-image-extension=$(suffix $@) --data-dir=$(<D) -o $@ $<
+sisdel.pdf: %.pdf: %.md %.css sisdel.md type-hierarchy-graph.pdf type-relation-graph.pdf default.latex
+	pandoc --toc -c $*.css --default-image-extension=$(suffix $@) --data-dir=$(<D) -o $@ $<
 
 
 # How to build the document file, same template regardless of output format
-sisdel.tex: %.tex: %.md %.css sisdel.md type-hierarchy-graph.pdf default.latex
-	pandoc -c $*.css --default-image-extension=pdf --data-dir=$(<D) -o $@ $<
+sisdel.tex: %.tex: %.md %.css sisdel.md type-hierarchy-graph.pdf type-relation-graph.pdf default.latex
+	pandoc --toc -c $*.css --default-image-extension=pdf --data-dir=$(<D) -o $@ $<
 
-sisdel.html: %.html: %.md %.css sisdel.md type-hierarchy-graph.svg
-	pandoc -c $*.css --default-image-extension=$(suffix $@) --data-dir=$(<D) -o $@ $<
+sisdel.html: %.html: %.md %.css sisdel.md type-hierarchy-graph.svg type-relation-graph.svg
+	pandoc --toc -c $*.css --default-image-extension=$(suffix $@) --data-dir=$(<D) -o $@ $<
 
 # Convert LaTex to pdf
 %.pdf: %.tex
