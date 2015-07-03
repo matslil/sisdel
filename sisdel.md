@@ -4,10 +4,10 @@
 Sisdel is an experimental language intended to examine how to make
 dependency tracking as accessible, useful and simple as possible. It
 also intends to broaden the scope to also include modern challenges
-such as security, privacy, license conforment, concurrency and
+such as security, privacy, conforming to license, concurrency and
 distributed design.
 
-Why Sisdel? {#whysisdel}
+Why Sisdel?
 ===========
 Sisdel is data driven, dependency tracking and declarative
 language. It has evolved from the observation that data survives way
@@ -42,7 +42,7 @@ store trust related meta-data about these modules.
 
 Code also has an author, and some companies might want to restrict
 what author or authors that are allowed to provide modules to the
-companies application. This can be for trustness reasons or business
+companies application. This can be for trustfulness reasons or business
 reasons.
 
 The author for the code also decides a license. When an application
@@ -68,7 +68,7 @@ good at is:
   not.
 * *Privacy*. We share personal data in order to get service back. But we
   want to know that this data is not used in a way we do not approve
-  to. This includes malicious developers as well as evesdropping third
+  to. This includes malicious developers as well as eavesdropping third
   parties.
 * *License*. All code is published with a certain license, and when code
   with different licenses are mixed, the application will have a
@@ -82,6 +82,11 @@ good at is:
   themselves both declare dependency as well as check for dependency
   giving the programmer a new tool for designing his or her
   application.
+  Dependencies also has weights, which is essentially a value saying
+  how much work it is to recalculate a certain value from another
+  value compare to other dependencies. This value is most heavily
+  affected by communication links, a slow link gives more penalty than
+  a fast one. Passing module boundaries also give some penalty.
 * *Concurrency*. Processing power is increased more by adding
   concurrency in the hardware rather than making the processor
   faster. The language should therefore encourage concurrent code.
@@ -103,6 +108,11 @@ good at is:
     - State machine
     - Declaratively
     - Logically, similar to Prolog
+* *Unambiguous*. If the code is not unambiguous, the compiler will
+  generate a compile error and require that code is added to make it
+  unambiguous. E.g. if the code can be parallelized but depending
+  on how can give different results, than this will give a compiler
+  error.
 
 The above together with some firm believes regarding language design
 is what has led to Sisdel.
@@ -115,17 +125,17 @@ higher level this is quite obvious: Write code that when executed does
 something. On a lower level, only the sky is the limit, and Sisdel
 should put no restriction on its use unless necessary.
 
-The chapter [Why Sisdel?](#whysisdel) could be seen as a number of use
+The chapter [Why Sisdel?] could be seen as a number of use
 scenarios that the language intends to fulfill. The next section in
-this chapter, [Principles](#principles), gives some collected wisdom
+this chapter, [Principles], gives some collected wisdom
 with current programming languages.
 
-Next section, [Design decisions](#designdecisions), describes design
+Next section, [Design decisions], describes design
 decisions that have been made and the rationale for each of them.
 
-Principles {#principles}
+Principles
 ----------
-Principles are statements that should guide the langauge design. These
+Principles are statements that should guide the language design. These
 are seen as truths for having the best design, and have no internal
 order of priority. The numbering is only for easy reference.
 
@@ -155,7 +165,7 @@ order of priority. The numbering is only for easy reference.
    should therefore be kept to the necessary minimum. It also makes
    the code easier to understand.
 
-Design decisions {#designdecisions}
+Design decisions
 ----------------
 This section describes design decisions taken for Sisdel. The design
 decisions are numbered for easy reference:
@@ -193,8 +203,9 @@ decisions are numbered for easy reference:
 
 The foundation of Sisdel
 ========================
-The following types are the foundation of Sisdel:
+The following types are the primary types for Sisdel:
 
+* Thing
 * Data
 * Type
 * Operator
@@ -203,13 +214,18 @@ The following types are the foundation of Sisdel:
 * Transaction
 * Module
 
-![Hierachy](type-hierarchy-graph "Sisdel type hierarchy")
+![Hierarchy](type-hierarchy-graph "Sisdel type hierarchy")
 
-### Data
-Data describes what is stored, how it is interpreted and what the
-legal sequence of it is.
+![Relations](type-relation-graph "Sisdel type relations")
 
-### Type
+### Thing - Root type
+This is the root type from which all other types are derived. Its
+mainly used to state "any type".
+
+### Data - Primary type
+Data describes what is stored.
+
+### Type- Primary type
 A type describes how something is to be interpreted. It tells whether
 Sisdel should treat an identifier as being data, operator, etc. It
 also says whether one piece of data is compatible with another, and
@@ -222,11 +238,11 @@ occur. These can be either implicit or explicit. Only typecast being
 defined can be implicit, all typecasts that Sisdel offers built-in
 must be called explicitly.
 
-### Operator
+### Operator - Primary type
 Operator receives a message containing data and acts on it. It normally
 produces data that is sent back again.
 
-### Message
+### Message - Primary type
 When an operator is called with parameters, these parameters are
 packed into a message by Sisdel and then sent asynchronously to the
 operator. When the calling code needs the return code, which in simple
@@ -239,20 +255,35 @@ The message sent to the operator is called "request" and the message
 received from the operator is called "reply". The name for "request"
 and "reply" is the same as for the operator.
 
-### Constraint
+### Constraint - Primary type
 Constraints can be put on anything to describe limitations of its
 use. These limitations are typically not intended to describe what can
 or cannot be done, but rather what is allowed. Constraints describe
 security, privacy and optimization concerns.
 
-When a thing does not fulfill the constraints it becomes invalidated,
-which means that Sisdel will keep looking for something else to be
-matched. This can be used as a technique to hide things, e.g. hide an
-operator that for a specific use case is non-optimal and allow Sisdel
-to search for a better one.
+Constraints can be given in two ways: Using "allow", "deny" and
+require, or using "when". This gives slightly different
+results. "allow" and "deny" will put restrictions on the use of the
+associated data, while "when" will put restrictions on when the
+statement will be executed.
 
-### Transaction
-When an operator is invoced, a transaction is created. This
+For example, to specify what types are accepted for the current
+operator:
+
+    arg iterations require range ( 1 to 5 )
+
+Or only use the "security-module" if it was authored by the correct
+author:
+
+    mod is use security-module when author "Mats Liljegren"
+
+The difference here is that "allow", "deny" and "require" results in
+compile or runtime error if constraint is not fulfilled, while "when"
+only results in code not taking any effect if the constraint is not
+fulfilled.
+
+### Transaction - Primary type
+When an operator is invoked, a transaction is created. This
 transaction is a branch from the current executing
 transaction. The transaction contains the current execution scope,
 which includes arguments given to the operator.
@@ -273,7 +304,7 @@ A security check can then let a transaction fail due to failing
 security check. Failing a transaction is similar to generating an
 exception in object oriented languages.
 
-### Module
+### Module - Primary type
 A Sisdel application is built out of one or more modules. The
 application always starts with a module being selected as the main
 module for the application. This module may then import or use other
@@ -295,59 +326,97 @@ It is possible to specify upgrade path to allow the application to
 automatically use a newer version of used or imported modules. This is
 code specifying how to translate data from old version of the used or
 imported module to the new version. In order for the upgrade to be
-seemless all the old version of the public operators needs to be still
+seamless all the old version of the public operators needs to be still
 defined but now accepting the new version of the data. If this is not
 true, then the application needs to be updated as well.
 
-Type hierarchy in Sisdel
-------------------------
+Derived types
+-------------
+The following types are derived from some other type.
 
-1. Type
-2. Unit
-3. Scope
-4. Authenticity
-5. Privacy
-6. Access restriction
-7. License management
+### Scope - derived from data
+A collection of data and operators which are used when resolving
+identifier names while parsing the code. Scopes are
+hierarchical.
 
-### Type
-Type is simply a set of restrictions, including a restriction saying
-that it must be an operator or data. Operators and data can then
-inherit from this type. Types can be used not only as a convenient
-container of commonly used set of restrictions, but also to describe
-interfaces.
+The root scope has module parameters used when invoking the module and
+the "use" operator. For root scope the "this" sub-scope will be empty.
+By using the "use" operator the rest of the language can be
+imported. The reason for this arrangement is to be able to version the
+language support, since the version of the language is part of the
+name supplied to the "use" operator. E.g.:
 
-### Unit
-Unit is a restriction that only describes compatibility when other
-means cannot. For example, it can be used to describe that two
-integers are not compatible since one of them has the unit kilograms
-and the other liters.
+    use sisdel-v1
 
-Different units can however be compatible given that a translation is
-done. E.g., 1 kilogram would equal 1000 gram. This makes it possible
-to give a value with one unit, while the function expects another, but
-compatible, unit.
+Above makes all exported identifiers in "sisdel-v1" available in current
+scope as though they were defined natively. You can also have them in
+a named scope:
 
-### Scope
-Scope is data containing operators and data available for a certain
-context. There are two main types of scopes: Lexical scope which is
-determined by how the code is designed, and transactional scope which is
-determined by execution path. The language defines a new scope when an
-application is invoced, which is called the root scope, for each
-import being done, for each data being defined, when entering operator
-arguments and when in operator implementation.
+    lang is use sisdel-v1
 
-### Authenticity
-Authenticity is a certification of author. This is a restriction that
-can be used to assert that code is written by speific author. The
-current implementation for the check is to use GPG and SKS protocols,
-but could be done with other protocols as well. An authenticity
-restriction also implies an integrity restriction, i.e. a guarantee
-that the code has been unaltered by someone else than the original
-author.
+In this case all identifiers exported from "sisdel-v1" are accessed
+through "lang" scope.
 
-### Privacy
-Privacy is about protecting sensitive data. This restriction will
+### Value - derived from data
+A value is something made up of digits. It can be a float or an
+integer.
+
+### String - derived from data
+String is a sequence of characters and digits, usually meant to be
+read by a human at some stage. Identifier names in the code are themselves
+strings. Sisdel uses UTF-8 to store the string.
+
+### Unit - derived from type
+Unit is used to declare type compatibility when there is no other
+hints about it. It can be used to describe that a certain integer is
+actually an age given in years, or that a string is actually a
+person's name. This way other integers representing other things can't
+be confused with ages, or other strings meant for other things can't
+be confused with names.
+
+It is possible to specify unit compatibility such that given a certain
+unit there is a way to calculate what it would become in another
+unit. This can for example be used to express relationship between
+kilogram and gram, saying that 1 kilogram can be converted to 1000
+gram.
+
+### Storage - derived from type
+Storage specifies how data is stored. This can express e.g. that data
+is private, and therefore is expected to be encrypted. It can specify
+storage size and alignment when stored in memory, and also endianess
+for integers.
+
+### Request - derived from message
+The request message is created by sisdel when an operator is
+invoked. This is the argument(s) given to the operator plus the data
+being operated on, i.e. the right-hand side and left-hand side of the
+operator expression. The operator implementation can then access these
+arguments as read-only data using "arg" scope for the arguments and
+"this" for the data being operated on.
+
+### Reply - derived from message
+The reply message is created by sisdel when entering operator
+implementation scope. The implementation can assign data to this reply
+message using "result" scope.
+
+### Size - derived from storage
+Specifies storage size, which can be specified in multiples of other
+types, or in bits or bytes.
+
+### Format - derived from storage
+How the data is stored. For integers this might be float or two's
+complement integer, and for strings this could be UTF-8, ASCII, UTF-16
+and so on.
+
+Several format might be combined, e.g. big-endian two's complement
+integer.
+
+### Alignment - derived from storage
+The address alignment for the data when stored in memory. This is most
+useful for device drivers.
+
+### Private - derived from storage
+Private is about protecting sensitive data. This storage directive will
 guarantee that the information is not leaked outside current
 scope. This guarantee is more than simple compile or runtime error if
 code outside scope tries to peek into the information, it will also
@@ -357,21 +426,38 @@ necessary, since it will limit debugability and might also have some
 heavy performance costs. The current implementation would use GPG for
 the encryption.
 
-Note that privacy restriction expects a user context, meaning that a
+Note that private storage expects a user context, meaning that a
 user context must first be created. This way many different privacy
 data can be created using the same user, and this specific user may
 still see all of this data. This user may therefore see all of this
 when debugging as well.
 
-### Access restriction
+### Valid-value - derived from constraint
+
+
+### Author - derived from constraint
+This is a restriction that can be used to assert that code is written
+by specific author, or data belongs to a specific author. In the
+latter case author means who entered the data.
+
+The current implementation for the check is to use GPG and SKS
+protocols, but could be done with other protocols as well. An
+authenticity restriction also implies an integrity restriction, i.e. a
+guarantee that the code has been unaltered by someone else than the
+original author.
+
+### Access - derived from constraint
 Access restriction is a security token model to limit access to
 primarily data, but could restrict other things as well like
 scope and operators. The restriction can be lexically or
 transactional, and can be limited by number of times of use.
 
-### License
+### Token - derived from constraint
+
+
+### License - derived from constraint
 Sisdel requires that all code has a defined license. Each type of
-license has a compatiblity with other licenses, where two licenses
+license has a compatibility with other licenses, where two licenses
 being combined might create a third license which then could be the
 license for the application being built.
 
@@ -382,7 +468,7 @@ or operator must have a certain license.
 Food for thought
 ----------------
 Molecular programming: Let the code organize itself. Code is
-constructing code, which construct code, ad finitum. In this process
+constructing code, which construct code, ad infinitum. In this process
 data processing might take place as well, performing some function.
 
 This should make adaptive programming possible, i.e. code that changes
@@ -403,7 +489,7 @@ if any of the types would be illegal to use.
 
 Note that once data or operator has been declared, other namespace may
 apply further restrictions on it when used from that namespace. Other
-namepace may not lift any existing restriction.
+namespace may not lift any existing restriction.
 
 Haskell type "maybe". Can be "Nothing" or "Just <x>", meaning "no
 value" and "value <x>" respectively. Forces the programmer to always
@@ -412,7 +498,7 @@ default type/sub-type?
 
 
 
-This is the tree of types being pre-defined by Sisdel:
+This is the tree of types being predefined by Sisdel:
 
 type
  |-- constraint
