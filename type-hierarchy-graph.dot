@@ -1,22 +1,65 @@
 digraph "Sisdel elements" {
-	// Start with class hierarchy
-	rankdir = RL // Since inheritance arrows point at parent
-	ranksep = 2 // More space to make it more readable
-	edge [arrowhead=empty] // UML: inherit
-	node [shape=rectangle] // UML: class
+	//
+	// Inheritance tree
+	//
+	
+	rankdir=BT // Since inheritance arrows point at parent
+	ranksep=1.5
+//	splines=polyline
+	edge [arrowhead=empty; // UML: inherit
+	      tailport=n;
+	      headport=s]
+	node [shape=record]    // UML: class
+	
+	// Parent: thing
+	{ storage set reference enum dependency value string type operator message constraint transaction } -> thingCollector [dir=none]
+	thingCollector -> thing
+	thingCollector [shape=point;width=0.01;heigh=0.01;constraint=false]
 
-	// These are the basic elements
-	{ data type operator message constraint transaction module } -> thing
+	// Parent: storage
+	{ endian alignment size } -> storageCollector [dir=none]
+	storageCollector -> storage
+	storageCollector [shape=point;width=0.01;heigh=0.01;constraint=false]
 
-	// These are derived elements
-	{ scope value string } -> data
-	{ unit storage "valid-value" } -> type
-	{ request reply } -> message
-	{ size format endian alignment private } -> storage
-	{ allow deny require } -> constraint
-	{ author access token license } -> require
+	// Parent: set
+	{ array map "single-linked-list" "double-linked-list" } -> setCollector [dir=none]
+	setCollector -> set
+	setCollector [shape=point;width=0.01;heigh=0.01;constraint=false]
 
-	// Use relations
-	edge [arrowhead=normal]
-	{ allow deny } -> thing
+	// Parent: map
+	scope -> map
+	
+	// Parent: value
+	{ signed unsigned float } -> valueCollector [dir=none]
+	valueCollector -> value
+	valueCollector [shape=point;width=0.01;heigh=0.01;constraint=false]
+
+	// Parent: string
+	"UTF-8" -> string
+
+	// Parent: UTF-8
+	{ URI unit } -> "UTF-8-Collector" [dir=none]
+	"UTF-8-Collector" -> "UTF-8"
+	"UTF-8-Collector" [shape=point;width=0.01;heigh=0.01;constraint=false]
+	
+	// Parent: scope
+	module -> scope
+
+	// Parent: message
+	{ request reply } -> messageCollector [dir=none]
+	messageCollector -> message
+	messageCollector [shape=point;width=0.01;heigh=0.01;constraint=false]
+
+	// Parent: constraint
+	{ author license private "valid-value" access token } -> constraintCollector [dir=none]
+	constraintCollector -> constraint
+	constraintCollector [shape=point;width=0.01;heigh=0.01;constraint=false]
+
+	//
+	// Node information
+	//
+
+	thing [
+		label="{thing|+ size\l+ alignment\l}"
+	]
 }

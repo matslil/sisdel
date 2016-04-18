@@ -16,7 +16,19 @@ digraph "Sisdel type relations" {
 	dependencyAnchor [shape=point;
 			  width=0.01;
 			  height=0.01]
-
+	// storage
+	things -> storage [arrowhead=normal;
+			   headlabel="1";
+			   taillabel="*";
+			   label="machine storage"]
+	// reference
+	thing -> reference [arrowhead=diamond;
+			    headlabel="1";
+			    taillabel="1"]
+	reference -> thing [arrowhead=normal;
+			    headlabel="1";
+			    taillabel="*"]
+			  
 	// scope
 	thing -> scope [arrowhead=diamond;
 			headlabel="1";
@@ -28,38 +40,27 @@ digraph "Sisdel type relations" {
 		       headlabel="*";
 		       taillabel="*";
 		       label="is of type"]
-	{ unit storage format } -> type [arrowhead=diamond;
-					 headlabel="1";
-					 taillabel="1"]
+	{ unit storage } -> type [arrowhead=diamond;
+				  headlabel="1";
+				  taillabel="1"]
 	
+	// operator
+	transaction -> operator [arrowhead=diamond;
+				 headlabel="1";
+				 taillabel="1"]
+	
+	// message
+	things -> message [arrowhead=diamond;
+			   headlabel="1";
+			   taillabel="1"]
+
 	// constraint
 	thing -> constraint [arrowhead=normal;
 			     headlabel="*";
 			     taillabel="*";
-			     label="constrained to"]
-	constraint -> private [arrowhead=normal;
-			       headlabel="*";
-			       taillabel="*"]
-	constraint -> "valid-value" [arrowhead=normal;
-				   headlabel="*";
-				   taillabel="*"]
-	constraint -> author [arrowhead=normal;
-			       headlabel="*";
-			       taillabel="*"]
-	constraint -> access [arrowhead=normal;
-			       headlabel="*";
-			       taillabel="*"]
-	constraint -> token [arrowhead=normal;
-			       headlabel="*";
-			       taillabel="*"]
-	constraint -> license [arrowhead=normal;
-			       headlabel="*";
-			       taillabel="*"]
+			     label="accessability"]
 	
 	// transaction
-	transaction -> operator [arrowhead=diamond;
-				 headlabel="1";
-				 taillabel="1"]
 	{ request reply } -> transaction [arrowhead=diamond;
 				headlabel="1";
 				taillabel="1"]
@@ -72,12 +73,4 @@ digraph "Sisdel type relations" {
 			   headlabel="1";
 			   taillabel="*"]
 
-
-	//
-	// Node information
-	//
-
-	thing [
-		label="{thing|+ size\l+ alignment\l}"
-	]
 }

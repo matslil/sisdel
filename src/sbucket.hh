@@ -35,8 +35,8 @@
 /**
  * Integer index for strings.
  * Equivalent indexes are guaranteed to be equivalent strings, and
- * vice versa, if index is equal to or larger than zero.
- * Negative values are reserved for error reporting.
+ * vice versa. Negative values are for reserved token names, such as
+ * new-line, end-of-file, parenthesis, brackets, etc.
  */
 typedef ssize_t sbucket_idx_t;
 

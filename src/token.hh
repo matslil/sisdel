@@ -30,24 +30,24 @@ along with GCC; see the file COPYING.  If not see
 #include "sbucket.h"
 #include "value.hh"
 
-class token_t {
-	friend class tokenizer_t;
-public:
+struct token_t {
 	enum : sbucket_idx_t {
 		eof = -1,
-		eol = -2
+		eol = -2,
+		lparen = -3,
+		rparen = -4,
+		lbracket = -5,
+		rbracket = -6,
+		lcurly = -7,
+		rcurly = -8
 	};
 
 	token_t(sbucket_idx_t idx, size_t line, size_t column)
-		: m_idx(idx), m_line(line), m_column(column) {}
-	sbucket_idx_t token() const { return m_idx; }
-	size_t line() const { return m_line; }
-	size_t column() const { return m_column; }
+		: idx(idx), line(line), column(column) {}
 
-private:
-	sbucket_idx_t m_idx;	
-	size_t m_line;
-	size_t m_column;
+	sbucket_idx_t idx;	
+	size_t line;
+	size_t column;
 };
 
 class tokenizer_t {

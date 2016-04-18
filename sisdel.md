@@ -1,11 +1,30 @@
 % Simple Syntax Dependency Language (Sisdel)
 % Mats Liljegren
 
-Sisdel is an experimental language intended to examine how to make
-dependency tracking as accessible, useful and simple as possible. It
-also intends to broaden the scope to also include modern challenges
-such as security, privacy, conforming to license, concurrency and
-distributed design.
+Sisdel is an experimental language intended to address modern
+programming language challenges. Current trend within programming is:
+
+- Internet of things, where every little piece of electronics is
+  connected to the Internet generating information.
+- Cloud computing, where computing resources is centralized and
+  virtualized to make the most effective use of hardware.
+- Private information like health status is being stored in the cloud
+  where multiple agents needs access, e.g. family members, doctors
+  etc.
+- Code is being more and more used in safety critical applications,
+  e.g. safe driving cars.
+
+All this means that information is becoming very central, since it is
+information that can cause privacy, security and safety
+concerns. Information carries legal implications like copyright,
+license conditions, and ownership. It also becomes important to track
+trust and being able to revoke rights to information that you own.
+
+Algorithms are a lot more volatile and can be executed at arbitrary
+places determined by third parties. Algorithms are information in
+themselves, meaning they carry copyright, license conditions,
+ownership and trust. Execution can be parallelized and distributed
+over the Internet.
 
 Why Sisdel?
 ===========
@@ -203,6 +222,108 @@ decisions are numbered for easy reference:
 
 The foundation of Sisdel
 ========================
+Everything is information, be it a string, a value or an algorithm. In
+Sisdel this is referred to as a "thing". For things, the following is
+being tracked:
+
+* *Owner*, who owns the information?
+* *Access token*, who have what kind of access to the information?
+* *Trust*, for algorithms this is how proven the algorithm is, i.e. how
+  bug free can you expect it to be? For data this is how certain can
+  you be that the information is correct?
+* *Dependency*, i.e. from where was this information calculated? Since
+  ownership, licences, access rights et.c. can change it is important
+  to keep track of how the information was calculated in case this
+  affects this information. E.g. if some information is suddently
+  deemed to be not to be trusted, this might affect other information
+  as well.
+* *Interpretation*, how is this information interpreted? This includes
+  the type, i.e. whether the information is an algorithm, a string, a
+  value, what kind of unit is has, and what constrictions that apply.
+* *Storage format*, i.e. how is the information packaged? Includes
+  things like endian, number of bits used, alignment requirements and
+  other hardware and/or protocol related concerns.
+
+Tracking ownership
+------------------
+
+So how do you decide who should own the information? And how to you
+store the identity of the owner?
+
+It might be the hardware that best knows who owns the information,
+since it might be the owner of the hardware that should also be the
+owner of the information. But this means that the hardware must have a
+way of telling who this is, requiring some kind of agreed protocol.
+
+Currently, no such protocol has been developed, so it becomes the
+responsibility of the application to decide this. Between applications
+or even between different parts of the same application, the protocol
+is decided by Sisdel.
+
+For Sisdel the ownership uses GPG, GNU Privacy Guard. It is the public
+key fingerprint that is used for the owner identity.
+
+Tracking access token
+---------------------
+
+An access token is needed to access information. Each information can
+have any number of access tokens, and access tokens can be added or
+removed compile time as well as runtime.
+
+Each access token contains:
+
+* The access right or rights that it grants.
+* The number of times it can be used, unless unlimited.
+* The user that may use the token, unless anyone is allowed to.
+
+The access rights tracked by Sisdel are:
+
+* Right to *read* the information.
+* Right to *copy* the information.
+* Right to *execute* the operator.
+
+Note that Sisdel is a copy by value language, which means that the
+copy right also gives the opportunity to create a new piece of
+information containing part of the original information with own
+modifications. Unless the read access right has also be granted the
+original information may still not be read, even when it is part of
+some new information.
+
+Copy access right also gives the right to delegate whatever access
+rights currently granted to some other user.
+
+The access rights affects the actual data, the interpretation of the
+data, and dependencies. The other meta-data, i.e. owner, access
+tokens, and storage format can be read by everyone. The right to copy
+also means that the storage format can be updated, since this is
+needed to fulfill the protocol being used when copying. Only the owner
+can change owner and access rights. Trust is determined by the user
+referring to the information and is not part of a copy.
+
+Tracking trust
+--------------
+
+Trust is a wrapping entity and not really a part of the
+information. When the information is copied trust is not part of the
+copy.
+
+Each user has a database of what user they assign what trust to. Any
+information from those users are assigned this trust level. Parts of
+the application can then apply a trust constriction, i.e. require that
+some information must have some level of trust to be accepted.
+
+Tracking dependencies
+---------------------
+
+
+
+Tracking interpretation
+-----------------------
+
+Tracking storage format
+-----------------------
+
+
 The following types are the primary types for Sisdel:
 
 * Thing
@@ -967,32 +1088,103 @@ Due to type inference, the first line of code above can actually be
 omitted. The "assign" object expects a mutable object, which means
 that this constraint will be inferred to "myobj".
 
-Security model
---------------
-Sisdel security model consists of the following:
-* Security tokens
+Security model, v2
+==================
+
+The security model is based on licenses, which issue permissions to
+users, where users can be applications as well as companies and
+physical users.
+
+A license consists of the following:
+
+* Licensee User
+* Issuing User
+* Permission
+* Limitations
+* Permission inheritence
+* Monitoring requirements
+* Date issued
 * Signature
-* Encryption
+* Description
 
-A security token can be created, checked and consumed. This is done by
-"providing-token" and "requiring-token". The latter will increment the
-use count of the token, and if the use limit has been reached, will
-also consume it.
+License
+-------
 
-A security token can be created in the transaction scope. The
-advantage of this is that the token will follow operator calls even if
-there are intermediate operators that know nothing about it.
+License is what connects everything together.
 
-A signature certifies that code comes from a certain author, in
-unaltered form. This is typically done in after "use" statements. E.g.:
-    use mymodule from https://sisdel-archive.org
-    mymodule is authored-by "My Name <my.name@my-org.com>"
+User, Licensee and Issuing
+--------------------------
 
-Encryption can be enabled for single data entries or for operators or
-modules. Simple say "private" to enable it, and specify user, e.g.:
-    mydata is integer , private
-    myuser is user "Legio Vegio <legio.vegio@vegio.org>"
-    mymodule is private myuser
+There are two user's for a license: The user that is allowed the
+permission, the Licensee User, and the user that gave the permission,
+the Issuing User.
+
+User can be:
+
+* Application
+* Physical user
+* Juridical person, e.g. company
+* User group
+
+Each user has associated public and private keys to authenticate
+themselves.
+
+Permission
+----------
+
+Name of permission given as an URI. What this permission means is
+determined by implementing code and how and when it checks the
+permission.
+
+Each permission also has a description understandable to humans
+describing what this permission is used for.
+
+Limitations
+-----------
+
+Limitations can be:
+
+* Time limit from first use
+* Calendar time range
+* Number of uses
+
+Permission inheritence
+----------------------
+
+This describes how the licensee user can grant this permission to
+other users:
+
+* Can grant other user's this permission, recursively
+* Can grant other user's this permission, but not recursively
+* Cannot grant this permission to other users
+
+Monitoring requirements
+-----------------------
+
+In case the issuing user wants to know how the permission is used. Can
+be any of:
+
+* Each use of the permission
+* When permission is first used
+* Each time licensee user grants this permission to a new user
+* First time licensee user grants this permission to a new user
+* Each time licensee user grants this permission to a new user, where
+  the new user is allowed to grant further users.
+* First time licensee user grants this permission to a new user, where
+  the new user is allowed to grant further users.
+
+There is also a flag indicating whether each use requires
+acknowledgement. 
+
+Signature
+---------
+
+Signature of the license done by issuing user.
+
+Description
+-----------
+
+Describes the license in a way understandable to humans.
 
 Trust Model
 -----------
@@ -1164,3 +1356,62 @@ the context within which they are declared.  “namespace” will select
 current namespace, and can be used as a pre-pend for an identifier
 declaration to declare it in current namespace. “context” can be used
 in a similar fashion.
+
+- Strings in code only depicts default language. Translation files for
+  other languages can be written afterwards without any special
+  attention when first writing the program.
+
+- ":" used as namespace operator.
+
+- " " used as concatenation operator.
+
+- "," used as next field operator.
+
+- <tab> used as indentation operator.
+
+- Identifier names can be used as strings, ensuring that names of
+  variables printed are actually valid identifiers.
+
+- Single int the same as an array of one int whose index 0 contains
+  this int value. I.e., all single values are also arrays of size 1,
+  and can therefore be used where arrays are expected.
+
+- Arrays and maps are compatible types, as long as the key values in
+  the map are compatible with array indexes. Arrays are actually maps
+  with keys consisting of unsigned integer where no duplicates are
+  allowed.
+
+- Time is handled by Sisdel as sequences. Things might occur
+  simultaneously and therefore have the same place in a
+  sequence. Sisdel will make sure that whatever is said to occur
+  simultaneously does not interact in such a way that race conditions
+  occur.
+
+- Even when a specific sequence has been specified, later code might
+  inject steps by saying "before this but after that".
+
+- Sequences can both apply to in which order data occurs as well as in
+  which order execution occurs, or in which order events should occur,
+  or states.
+
+- Be able to express things as states. How generic can it be made?
+  Applies to types, execution, data? How are events defined?
+
+### Concurrency model
+
+- Each input source, output destination and decision loop are given
+  their own thread of execution.
+
+- Threads of executions might be merged for performance reasons based
+  on rules set in the source code. For example, threads having similar
+  turn-around time for responding to events might be merged. Threads
+  sharing a lot of data might also be merged.
+
+- To support above, it must be possible to talk about threads having
+  shorter or longer turn-around times, and how much so. This should be
+  expressed in percentage of each other, and not in absolute elapsed
+  time.
+
+- Data sharing should also be possible to be expressed. It can be both
+  quantitive as in number of bytes shared, and qualitive as in how
+  often this happens, or any combinations thereof.
