@@ -326,57 +326,45 @@ Tracking storage format
 
 The following types are the primary types for Sisdel:
 
-* Thing
-* Data
+* Set
+* Map
 * Type
-* Operator
-* Message
+* Value
+* String
 * Constraint
-* Transaction
-* Module
 
 ![Hierarchy](type-hierarchy-graph "Sisdel type hierarchy")
 
 ![Relations](type-relation-graph "Sisdel type relations")
 
-### Thing - Root type
-This is the root type from which all other types are derived. Its
-mainly used to state "any type".
+### Set
+This is the simplest container. It contains a collection of items,
+which by default are unordered. A constraint could be applied to a
+set to make it sorted.
 
-### Data - Primary type
-Data describes what is stored.
+### Map
+The map associates a key with a value. By default both keys and values
+may be of different types for different items within the same map.
 
-### Type- Primary type
-A type describes how something is to be interpreted. It tells whether
-Sisdel should treat an identifier as being data, operator, etc. It
-also says whether one piece of data is compatible with another, and
-also how to parse the data. A string might for example be stored as
-pure ASCII string or as UTF-8 Unicode string. The type will tell which
-it is so the code knows how to read the string.
+Array can be constructed from map by letting key be of type unsigned
+integer and disallow duplicates.
 
-If one type is expected but another is provided, a typecast can
-occur. These can be either implicit or explicit. Only typecast being
-defined can be implicit, all typecasts that Sisdel offers built-in
-must be called explicitly.
+A sorted map will sort on key type, key value, data type and data value,
+in that order.
 
-### Operator - Primary type
-Operator receives a message containing data and acts on it. It normally
-produces data that is sent back again.
+Map inherits from set.
 
-### Message - Primary type
-When an operator is called with parameters, these parameters are
-packed into a message by Sisdel and then sent asynchronously to the
-operator. When the calling code needs the return code, which in simple
-cases could be a simple success or fail, it will wait for a reply
-signal from the called operator. This enables Sisdel to schedule other
-activities in between to ensure better support for multiple processor
-or nodes.
+### Type
+Type determines what is compatible, and consists of:
+- The class
+- The unit
+- The constraint
 
-The message sent to the operator is called "request" and the message
-received from the operator is called "reply". The name for "request"
-and "reply" is the same as for the operator.
+### Value
+Value can be a floating point value or an unsigned or signed integer
+value. By default, the values are unbounded.
 
-### Constraint - Primary type
+### Constraint
 Constraints can be put on anything to describe limitations of its
 use. These limitations are typically not intended to describe what can
 or cannot be done, but rather what is allowed. Constraints describe
@@ -402,54 +390,6 @@ The difference here is that "allow", "deny" and "require" results in
 compile or runtime error if constraint is not fulfilled, while "when"
 only results in code not taking any effect if the constraint is not
 fulfilled.
-
-### Transaction - Primary type
-When an operator is invoked, a transaction is created. This
-transaction is a branch from the current executing
-transaction. The transaction contains the current execution scope,
-which includes arguments given to the operator.
-
-When the called operator has finished successfully, the created
-transaction has been fulfilled, and the transaction will return a
-value. If the called operator fails, the created transaction
-fails and no value is returned. Unless the current transaction handles
-this failure, this will cause the current transaction to fail as well.
-
-The code can add data to the current transaction, which is typically
-used for security tokens. This way of supplying arguments to an
-operator is useful since some operators might not care about security
-tokens and will therefore not forward them, but the transaction itself
-will.
-
-A security check can then let a transaction fail due to failing
-security check. Failing a transaction is similar to generating an
-exception in object oriented languages.
-
-### Module - Primary type
-A Sisdel application is built out of one or more modules. The
-application always starts with a module being selected as the main
-module for the application. This module may then import or use other
-modules.
-
-A module is expected to be a versioned file or tree of files. Current
-implementation has support for GIT integration, but other versioning
-system should also be possible to use.
-
-Importing a module means to include it during compile time, while
-using a module means to refer to the module during compile time, and
-include it during runtime.
-
-A compile module will keep track of what version of imported or used
-modules that was used. Only this version of the modules will be
-accepted when running the application.
-
-It is possible to specify upgrade path to allow the application to
-automatically use a newer version of used or imported modules. This is
-code specifying how to translate data from old version of the used or
-imported module to the new version. In order for the upgrade to be
-seamless all the old version of the public operators needs to be still
-defined but now accepting the new version of the data. If this is not
-true, then the application needs to be updated as well.
 
 Derived types
 -------------
