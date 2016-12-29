@@ -5,7 +5,7 @@ export SRCPATH := $(abspath $(dir $(shell readlink -e $(CURDIR)/$(lastword $(MAK
 MAKECMDGOALS ?= test
 
 .PHONY: all $(MAKECMDGOALS)
-test $(MAKECMDGOALS): Makefile
+$(MAKECMDGOALS): Makefile
 	@$(MAKE) -rR --warn-undefined-variables --no-print-directory $@ BUILDING=y
 
 # Make sure object directory gets a link to the makefile, so we don't need to
@@ -53,21 +53,22 @@ vpath default.latex $(SRCPATH)/templates
 
 # Needed when building unit tests
 vpath %.cc $(SRCPATH)/unit-test   # Sisdel unit tests
-vpath %.cc /usr/src/gtest/src     # GTest source, must be built with the same
-				  # flags as Sisdel!
+vpath %.cc $(CURDIR)/googletest/googletest/src # Google test framework
 
 OPTIMIZE_LEVEL := 0
 
 CFLAGS_COMMON := -I$(SRCPATH)/src
 CFLAGS_COMMON += -I$(CURDIR)
-CFLAGS_COMMON += -isystem $(LTTNG)/include
-CFLAGS_COMMON += -I/usr/src/gtest
 CFLAGS_COMMON += -Wall
 CFLAGS_COMMON += -Wshadow
 #CFLAGS_COMMON += -Werror
 CFLAGS_COMMON += -g
 CFLAGS_COMMON += -pthread
 CFLAGS_COMMON += -O$(OPTIMIZE_LEVEL)
+
+# Include directories for Google Test
+CFLAGS_COMMON += -isystem $(CURDIR)/googletest/googletest/include
+CFLAGS_COMMON += -I$(CURDIR)/googletest/googletest
 
 LDFLAGS :=
 
@@ -79,7 +80,7 @@ override LDFLAGS += -Wl,-t
 endif
 
 override LDFLAGS += -pthread
-override LDFLAGS += -Wl,-rpath -Wl,$(LTTNG)/lib
+#override LDFLAGS += -Wl,-rpath -Wl,$(LTTNG)/lib
 
 CFLAGS :=
 override CFLAGS += $(CFLAGS_COMMON)
@@ -87,12 +88,12 @@ override CFLAGS += $(CFLAGS_COMMON)
 CCFLAGS :=
 override CCFLAGS += $(CFLAGS_COMMON)
 override CCFLAGS += -Wextra
+override CCFLAGS += -std=c++14
 
 CC := clang
 C++ := clang++
 
 CCFILES := sbucket.cc
-CCFILES += mmap.cc
 CCFILES += file.cc
 CCFILES += mmap_file.cc
 CFILES += sisdel_tracepoints.c
@@ -174,7 +175,7 @@ test: Makefile check_sbucket
 
 #%.bc: %.cc sisdel_tracepoints.h
 #	@echo "   C++ $<"
-#	$(C++) -std=c++11 -MMD -MF $(@:.o=.d) -c $(CCFLAGS) -o $@ $<
+#	$(C++) -MMD -MF $(@:.o=.d) -c $(CCFLAGS) -o $@ $<
 
 # Clean all temporary files
 clean: clean-doc
@@ -184,10 +185,16 @@ clean: clean-doc
 lint: $(CFILES)
 	clang --analyze $(CPPFLAGS) $(LINTFLAGS) $^
 
+# Google Test
+googletest:
+	git clone https://github.com/google/googletest.git
+
+gtest-all.cc: googletest
+
 .SECONDEXPANSION:
 
 $(addprefix check_,$(UNIT_TESTS)): $(CCFILES) $$@.cc gtest-all.cc $(CFILES:.c=.o)
 	@echo "   LD  $@"
-	$(C++) -std=c++11 $(CCFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(C++) $(CCFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 endif # ifeq ($(origin BUILDING),undefined)

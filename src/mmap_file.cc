@@ -31,33 +31,32 @@ along with GCC; see the file COPYING.  If not see
 
 ///////////////////////////////////////////////////////////////////////////////
 //
+// Private class: mmap_t
+//
+///////////////////////////////////////////////////////////////////////////////
+
+static const void *mmap_wrap(size_t length, int fd) {
+	const void * const ptr = mmap(NULL, length, PROT_READ, MAP_PRIVATE, fd, 0);
+	if (ptr == NULL)
+		throw std::system_error(errno, std::generic_category(), "mmap");
+
+	return ptr;
+}
+
+mmap_file_t::mmap_t::mmap_t(const char *name)
+	: m_file(name, O_RDONLY), m_map(mmap_wrap(m_file.size(), m_file.fd())) {
+}
+
+mmap_file_t::mmap_t::~mmap_t() {
+	munmap(const_cast<void*>(m_map), m_file.size());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
 // Class: mmap_file_t
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-mmap_t l_mmap_file_helper(const char *name) {
-	file_t file(name, O_RDONLY);
-
-	const off_t size = file.seek_end();
-
-	(void) file.seek_begin();
-
-	mmap_t map(NULL, size, PROT_READ, MAP_PRIVATE, file.fd(), 0);
-
-	return map;
-}
-
 mmap_file_t::mmap_file_t(environment_t &env, sbucket_idx_t name)
-	: m_name(name), m_map(l_mmap_file_helper(env.sbucket()[name]))
+	: m_name(name), m_map(env.sbucket()[name])
 {}
-
-mmap_file_t::mmap_file_t(mmap_file_t &&from)
-	: m_name(from.m_name), m_map(std::move(from.m_map))
-{}
-
-mmap_file_t& mmap_file_t::operator=(mmap_file_t &&from) {
-	m_name = from.m_name;
-	m_map = std::move(from.m_map);
-
-	return *this;
-}

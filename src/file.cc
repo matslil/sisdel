@@ -32,28 +32,26 @@ along with GCC; see the file COPYING.  If not see
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-file_t::file_t(const char *name, int flags) : m_fd(open(name, flags)) {
-	if (m_fd < 0) {
+static size_t file_size(int fd) {
+	if (fd < 0) {
 		throw std::system_error(errno, std::generic_category(), "open");
 	}
+
+	const off_t end_offset = lseek(fd, 0, SEEK_END);
+
+	if (end_offset < 0)
+		throw std::system_error(errno, std::generic_category(), "seek_end");
+
+	if (lseek(fd, 0, SEEK_SET) < 0)
+		throw std::system_error(errno, std::generic_category(), "seek_set");
+	
+	return static_cast<size_t>(end_offset);
+}
+
+file_t::file_t(const char *name, int flags)
+	: m_fd(open(name, flags)), m_size(file_size(m_fd)) {
 }
 
 file_t::~file_t() {
-	if (m_fd >= 0) close(m_fd);
+	close(m_fd);
 }
-
-
-off_t file_t::seek_begin(off_t offset) {
-	const off_t new_offset = lseek(m_fd, offset, SEEK_SET);
-	if (new_offset < 0)
-		throw std::system_error(errno, std::generic_category(), "seek_begin");
-	return new_offset;
-}
-
-off_t file_t::seek_end(off_t offset) {
-	const off_t new_offset = lseek(m_fd, offset, SEEK_END);
-	if (new_offset < 0)
-		throw std::system_error(errno, std::generic_category(), "seek_end");
-	return new_offset;
-}
-

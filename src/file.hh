@@ -28,20 +28,20 @@ along with GCC; see the file COPYING.  If not see
 class file_t {
 public:
 	file_t(const char *name, int flags);
-	file_t(file_t &&from) : m_fd(from.m_fd) { from.m_fd = -1; }
 	~file_t();
-	file_t& operator=(file_t &&from) { m_fd = from.m_fd; from.m_fd = -1; return *this; }
-	off_t seek_begin(off_t offset = 0);
-	off_t seek_end(off_t offset = 0);
-	int fd() { return m_fd; }
+	constexpr size_t size(void) const noexcept { return m_size; }
+	constexpr int fd() const noexcept { return m_fd; }
 
 	// Forbidden methods
 	file_t() = delete;
 	file_t(const file_t&) = delete;
 	file_t& operator=(const file_t&) = delete;
+	file_t& operator=(file_t &&from) = delete;
+	file_t(file_t &&from) = delete;
 
 private:
-	int m_fd;
+	const int m_fd;
+	const size_t m_size;
 };
 
 #endif /* FILE_H */

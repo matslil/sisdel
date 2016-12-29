@@ -16,7 +16,7 @@ FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 for more details.
 
 You should have received a copy of the GNU General Public License
-along with GCC; see the file COPYING.  If not see
+along with Sisdel; see the file COPYING.  If not see
 <http://www.gnu.org/licenses/>.
 
 */
@@ -24,9 +24,12 @@ along with GCC; see the file COPYING.  If not see
 #ifndef MMAP_FILE_H
 #define MMAP_FILE_H
 
+#include "file.hh"
 #include "sbucket.hh"
-#include "mmap.hh"
 #include "environment.hh"
+#include "error.hh"
+
+class mmap_t;
 
 class mmap_file_t {
 public:
@@ -35,8 +38,8 @@ public:
 	~mmap_file_t() {}
 	mmap_file_t& operator=(mmap_file_t &&from);
 	const char *buf() const { return static_cast<const char *>(m_map.map()); }
-	sbucket_idx_t name() const { return m_name; }
-	size_t buf_size() const { return m_map.size(); }
+	constexpr sbucket_idx_t name() const noexcept { return m_name; }
+	constexpr size_t buf_size() const noexcept { return m_map.file_size(); }
 
 	// Forbidden methods
 	mmap_file_t() = delete;
@@ -44,6 +47,24 @@ public:
 	mmap_file_t& operator=(const mmap_file_t &) = delete;
 
 private:
+	// Wrap map/munmap to make deallocation work with exceptions
+	class mmap_t {
+	public:
+		mmap_t(const char *name);
+		~mmap_t();
+		constexpr const void *map(void) const noexcept { return m_map; }
+		constexpr size_t file_size(void) const noexcept { return m_file.size(); }
+
+		// Forbidden methods
+		mmap_t() = delete;
+		mmap_t(const mmap_t&) = delete;
+		mmap_t& operator=(const mmap_t&) = delete;
+
+	private:
+		const file_t m_file;
+		const void *m_map;
+	};
+
 	sbucket_idx_t m_name;
 	mmap_t m_map;
 };
