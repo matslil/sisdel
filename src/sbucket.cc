@@ -25,6 +25,7 @@
 #include <lttng/tracepoint.h>
 #include "sisdel_tracepoints.h"
 #include "sbucket.hh"
+#include "hash.hh"
 
 /*
  * Internal helper functios
@@ -94,6 +95,21 @@ sbucket_idx_t sbucket_t::find_add_hashed(const char *str,
 	tracepoint(tp_sisdel, tp_sbucket_add, hash, str, str_len, idx);
 
 	return idx;
+}
+
+sbucket_idx_t sbucket_t::find_add(const char *str)
+{
+	hash_t hash = 0;
+	size_t str_len = 0;
+	
+	for (; *str != '\0'; str++) {
+		hash = hash_next(*str, hash);
+		str_len++;
+	}
+	
+	hash = hash_finish(hash);
+
+	return find_add_hashed(str, str_len, hash);
 }
 
 const char *sbucket_t::operator[](sbucket_idx_t idx) {

@@ -1,5 +1,25 @@
 #include "error.h"
 
+struct parser_error : public exception {
+	lexer_error(const Environment& env, sbucket_idx_t file, size_t line, size_t col, size_t start_col, const std::string code, const std::string msg)
+		: m_env(env), m_file(file),
+		  m_start_col(col),
+		  m_line(line), m_col(col), m_start_line(line),
+		  m_code(code), m_msg(msg) {}
+	const Environment m_env;
+	const sbucket_idx_t m_file;
+	const size_t m_line;
+	const size_t m_col;
+	const size_t m_start_col;
+	const std::string m_code;
+	const std::string m_msg;
+
+	const char *what() const throw () {
+		std::stringstream ss;
+		ss << m_env.sbucket()[m_file] << ':' << m_line << ':' << ':' << m_col << ': error: ' << m_msg << std::endl << "        " << m_code;
+		return ss.str().c_str();
+	}
+
 namespace error {
 	std::error_code make_error_code(error_code_t err) {
 		return std::error_code(static_cast<int>(err), error_category());
@@ -8,7 +28,7 @@ namespace error {
 	std::error_condition make_error_condition(error_condition_t econd) {
 		return std::error_condition(static_cast<int>(econd), error_category());
 	}
-}
+};
 
 const char *error_category_impl::name() const {
 	return "sisdel";

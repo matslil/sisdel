@@ -2,7 +2,7 @@
 
 Memory mapped file for the token parser.
 
-Copyright (C) 2013 Mats G. Liljegren
+Copyright (C) 2013-2016 Mats G. Liljegren
 
 This file is part of Sisdel.
 
@@ -28,6 +28,7 @@ along with Sisdel; see the file COPYING.  If not see
 #include "sbucket.hh"
 #include "environment.hh"
 #include "error.hh"
+#include "position.hh"
 
 class mmap_t;
 
@@ -37,16 +38,35 @@ public:
 	mmap_file_t(mmap_file_t &&from);
 	~mmap_file_t() {}
 	mmap_file_t& operator=(mmap_file_t &&from);
-	const char *buf() const { return static_cast<const char *>(m_map.map()); }
+
 	constexpr sbucket_idx_t name() const noexcept { return m_name; }
 	constexpr size_t buf_size() const noexcept { return m_map.file_size(); }
 
+	constexpr const char *str() const noexcept { return m_currpos; }
+	char get();
+	constexpr char peek(void) const noexcept
+		{ eof() ? '\0' : *m_currpos; }
+	constexpr bool eof(void) const noexcept (void)
+		{ return m_currpos >= m_endpos; }
+	size_t skip(char skip_ch);
+	size_t skip(char *skip_str);
+	void skip_until(char until_ch);
+	size_t skip_until_hashed(char until_ch, hash_t& hash);
+	size_t skip_until_hashed(const char* until_str, hash_t& hash);
+	void skip(void);
+
+	constexpr const position_t& get_position const noexcept (void)
+		{ return m_pos;}
+	void set_position(const position_t& pos) { m_pos = pos; }
+	size_t distance(const position_t& from, const position_t& to);
+	
 	// Forbidden methods
 	mmap_file_t() = delete;
 	mmap_file_t(const mmap_file_t &) = delete;
 	mmap_file_t& operator=(const mmap_file_t &) = delete;
 
 private:
+	
 	// Wrap map/munmap to make deallocation work with exceptions
 	class mmap_t {
 	public:
@@ -65,8 +85,9 @@ private:
 		const void *m_map;
 	};
 
-	sbucket_idx_t m_name;
 	mmap_t m_map;
+	position_t m_pos;
+	const char * const m_endpos;
 };
 
 

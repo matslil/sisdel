@@ -1,7 +1,11 @@
 /*
 
 File operations.
-Copyright (C) 2013 Mats G. Liljegren
+
+Represents an opened file descriptor. The purpose of the class is primarily
+to ensure the file is closed when the file descriptor goes out of scope.
+
+Copyright (C) 2013-2016 Mats G. Liljegren
 
 This file is part of Sisdel.
 

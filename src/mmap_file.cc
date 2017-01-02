@@ -58,5 +58,101 @@ mmap_file_t::mmap_t::~mmap_t() {
 ///////////////////////////////////////////////////////////////////////////////
 
 mmap_file_t::mmap_file_t(environment_t &env, sbucket_idx_t name)
-	: m_name(name), m_map(env.sbucket()[name])
+	: m_map(env.sbucket()[name]),
+	  m_pos(env, m_map.map(), name),
+	  m_endpos(m_map.map() + m_map.file_size)
 {}
+
+char mmap_file_t::get()
+{
+	if (eof()) return '\0';
+	const char ch = *m_currpos;
+	skip();
+	return ch;
+}
+
+size_t mmap_file_t::skip(char skip_ch)
+{
+	size_t count = 0;
+
+	while (!eof() && (*m_currpos == skip_ch)) {
+		skip();
+		count++;
+	}
+	
+	return count;
+}
+
+size_t mmap_file_t::skip(char *skip_str)
+{
+	size_t count = 0;
+
+	while (!eof() && (strchr(skip_str, *m_currpos) != NULL)) {
+		skip();
+		count++;
+	}
+
+	return count;
+}
+
+void mmap_file_t::skip_until(char until_ch)
+{
+	if (eof())
+		throw std::system_error(EINVAL, std::generic_category(), "Failed finding character");
+	while (*m_currpos != until_ch) {
+		skip();
+		if (eof())
+			throw std::system_error(EINVAL, std::generic_category(), "Failed finding character");
+	}
+}
+
+size_t mmap_file_t::skip_until_hashed(char until_ch, hash_t& hash)
+{
+	size_t count = 0;
+	hash = 0;
+	if (eof())
+		throw std::system_error(EINVAL, std::generic_category(), "Failed finding character");
+	while (*m_currpos != until_ch) {
+		hash = hash_next(hash);
+		count++;
+		skip();
+		if (eof())
+			throw std::system_error(EINVAL, std::generic_category(), "Failed finding character");
+	}
+
+	hash = hash_finish(hash);
+
+	return count;
+}
+
+size_t mmap_file_t::skip_until_hashed(const char* until_str, hash_t& hash)
+{
+	size_t count = 0;
+	hash = 0;
+	if (eof())
+		throw std::system_error(EINVAL, std::generic_category(), "Failed finding character");
+	while (strchr(until_str, *m_currpos) == NULL) {
+		hash = hash_next(hash);
+		count++;
+		skip();
+		if (eof())
+			throw std::system_error(EINVAL, std::generic_category(), "Failed finding character");
+	}
+
+	hash = hash_finish(hash);
+
+	return count;
+}
+
+void mmap_file_t::skip(void)
+{
+	if (eof())
+		throw std::system_error(EPIPE, std::generic_category(), "mmap_file_t::skip");
+	if ((*m_currpos) == '\n') {
+		m_pos.m_line--;
+		m_pos.m_col = 1;
+	} else {
+		m_pos.m_col--;
+	}
+	m_currpos++;
+}

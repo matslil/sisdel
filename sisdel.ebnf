@@ -1,0 +1,128 @@
+/*
+   This file adheres to syntax defined here:
+
+   http://bottlecaps.de/rr/ui
+
+   Which also is the tools used to convert the EBNF to SVG syntax diagram,
+   also known as railroad diagram.
+*/
+
+/*
+
+   open "main.c" , mode : read-write
+
+   a > 5 then
+     "main.c" open mode : read-write
+   else
+     "main.c" open mode : read-only
+
+   "main.c" open mode : ( a > 5 then read-write else read-only )
+
+*/
+
+
+
+/*
+   Parser syntax.
+*/
+
+Program ::= ( NewLine* Expression )+
+Expression ::= Scope? ScopedExpression
+        | Scope? ( NewLine+ Indent ScopedExpression )+
+	| List
+ScopedExpression ::= OperatorCall
+	| Immediate
+        | ( NewLine+ Indent Expression )+
+	| '(' Expression ')'
+	| '(' NewLine+ Indent Expression NewLine* ')'
+	| '[' Expression ']'
+	| '[' NewLine+ Indent Expression NewLine+ ']'
+Scope ::= ScopeIdentifier ':'
+        | Expression ':' /* Must evaluate to a scope identifier */
+List ::= Expression ( ',' Expression )*
+OperatorCall ::= Operator Expression?
+Operator ::= OperatorIdentifier
+        | Expression /* Must evaluate to an operator identifier */
+Immediate ::= Number
+        | String
+NewLine ::= Comment? NewLineChar
+
+/*
+   Scanner syntax.
+
+   NOTE: All carriage return characters are ignored within code!
+*/
+
+Comment ::= '#' PrintableChar*
+String ::= '”' ValidStringChar '”'
+Number ::= '-' Number
+Number ::= DecReal
+Number ::= '0x' HexReal
+Number ::= '0o' OctReal
+Number ::= '0b' BinReal
+BinReal ::= BinDigits ( '.' BinDigits )?
+OctReal ::= OctDigits ( '.' OctDigits )?
+DecReal ::= DecDigits ( '.' DecDigits )?
+HexReal ::= HexDigits ( '.' HexDigits )?
+
+/* Example: 00'0100'0011'0110 */
+BinDigits ::= BinDigit ( BinDigit ( BinDigit ( BinDigit | BinDigitsDelim )? )? )?
+BinDigitsDelim ::= ( "'" BinDigit BinDigit BinDigit BinDigit )+
+
+/* Example: 434'4813'8771 */
+OctDigits ::= OctDigit ( OctDigit ( OctDigit ( OctDigit | OctDigitsDelim )? )? )?
+OctDigitsDelim ::= ( "'" OctDigit OctDigit OctDigit OctDigit )+
+
+/* Example: 34'891'093'321 */
+DecDigits ::= DecDigit ( DecDigit ( DecDigit ( DecDigit | DecDigitsDelim )? )? )?
+DecDigitsDelim ::= ( "'" DecDigit DecDigit DecDigit Decdigit )+
+
+/* Example: a0'ffa0'0ffe'bcdc */
+HexDigits ::= HexDigit ( HexDigit ( HexDigit ( HexDigit | HexDigitsDelim )? )? )?
+HexDigitsDelim ::= ( "'" HexDigit HexDigit HexDigit Hexdigit )+
+
+BinDigit ::= [0-1]
+OctDigit ::= [0-7]
+DecDigit ::= [0-9]
+HexDigit ::= [0-9a-fA-F]
+Identifier ::= ValidFirstChar NonWhiteSpaceChar*
+
+/* Character definitions */
+ValidFirstChar ::= [#x21-#x2C] | [#x2E-#x2F] | [#x3A-#xFFFFFFFF] /* All non-whitespace characters except numbers and "-" */
+PrintableChar ::= [#x20-#xFFFFFFFF]
+ValidStringChar ::= [#x20-#x21] | [#x23-#xFFFFFFFF]
+NonWhiteSpaceChar ::= [#x21-#xFFFFFFFF]
+SpaceChar ::= #x20
+NewLineChar ::= #xA
+TabChar ::= #x9
+
+### Example, hello world:
+    use sisdel-v1
+	stdout println "Hello world!"
+
+### Example, calculate sum of arguments:
+    use sisdel-v1
+	stdout println "Sum: " , sum arg
+	operator sum is
+	    arg foreach val do ( retval add val )
+
+### Example, same as above but make sure sum only accepts unsigned integers
+    use sisdel-v1
+	stdout println "Sum: " , sum arg
+	operator sum is
+	    arg is unsigned
+	    arg foreach val do ( retval add val )
+
+### Example, multiple parameters to operator:
+    use sisdel-v1
+	stdout println "Result: " , repeat-string "hej " nr-times: 2
+	operator repeat-string is
+	    repeat nr-times do ( retval add arg )
+
+### Example, make sum single-threaded
+    use sisdel-v1
+        stdout println "Result: " , sum 1 , 2 , 3 , 4, 5
+        operator sum is
+	    arg foreach val do ( retval add val )
+        message sum is queue-len-max 1
+
