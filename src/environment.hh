@@ -34,6 +34,7 @@ public:
 	~environment_t() = default;
 
 	sbucket_t& sbucket() { return m_sbucket; }
+	const sbucket_t& sbucket() const { return m_sbucket; }
 
 	// I guess move should using default
 	environment_t(environment_t &&) = default;

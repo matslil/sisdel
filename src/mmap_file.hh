@@ -30,8 +30,6 @@ along with Sisdel; see the file COPYING.  If not see
 #include "error.hh"
 #include "position.hh"
 
-class mmap_t;
-
 class mmap_file_t {
 public:
 	mmap_file_t(environment_t &env, sbucket_idx_t name);
@@ -39,26 +37,27 @@ public:
 	~mmap_file_t() {}
 	mmap_file_t& operator=(mmap_file_t &&from);
 
-	constexpr sbucket_idx_t name() const noexcept { return m_name; }
 	constexpr size_t buf_size() const noexcept { return m_map.file_size(); }
 
-	constexpr const char *str() const noexcept { return m_currpos; }
+	constexpr const char *str() const noexcept { return m_pos.m_buff; }
 	char get();
 	constexpr char peek(void) const noexcept
-		{ eof() ? '\0' : *m_currpos; }
-	constexpr bool eof(void) const noexcept (void)
-		{ return m_currpos >= m_endpos; }
+		{ return eof() ? '\0' : *m_pos.m_buff; }
+	constexpr bool eof(void) const noexcept
+		{ return m_pos.m_buff >= m_pos.m_end; }
 	size_t skip(char skip_ch);
-	size_t skip(char *skip_str);
+	size_t skip(const char *skip_str);
 	void skip_until(char until_ch);
 	size_t skip_until_hashed(char until_ch, hash_t& hash);
 	size_t skip_until_hashed(const char* until_str, hash_t& hash);
 	void skip(void);
 
-	constexpr const position_t& get_position const noexcept (void)
+	constexpr const position_t& get_position(void) const noexcept
 		{ return m_pos;}
-	void set_position(const position_t& pos) { m_pos = pos; }
-	size_t distance(const position_t& from, const position_t& to);
+	void set_position(const position_t& pos) noexcept { m_pos = pos; }
+
+	constexpr sbucket_idx_t filename(void) const noexcept
+		{ return m_filename; }
 	
 	// Forbidden methods
 	mmap_file_t() = delete;
@@ -72,8 +71,10 @@ private:
 	public:
 		mmap_t(const char *name);
 		~mmap_t();
-		constexpr const void *map(void) const noexcept { return m_map; }
-		constexpr size_t file_size(void) const noexcept { return m_file.size(); }
+		constexpr const char *map(void) const noexcept
+			{ return m_map; }
+		constexpr size_t file_size(void) const noexcept
+			{ return m_file.size(); }
 
 		// Forbidden methods
 		mmap_t() = delete;
@@ -82,12 +83,12 @@ private:
 
 	private:
 		const file_t m_file;
-		const void *m_map;
+		const char * const m_map;
 	};
 
 	mmap_t m_map;
 	position_t m_pos;
-	const char * const m_endpos;
+	const sbucket_idx_t m_filename;
 };
 
 

@@ -28,20 +28,11 @@
 #include "hash.hh"
 
 /*
- * Internal helper functios
- */
-
-static inline size_t max(size_t a, size_t b) {
-	return (a > b) ? a : b;
-}
-
-/*
  * Public function implementation
  */
 
 sbucket_t::sbucket_t()
-	: m_idx_next(0),
-	  m_idx()
+	: m_idx()
 {
 	m_hash.fill(-1);
 	tracepoint(tp_sisdel, tp_sbucket_init, this);
@@ -112,7 +103,7 @@ sbucket_idx_t sbucket_t::find_add(const char *str)
 	return find_add_hashed(str, str_len, hash);
 }
 
-const char *sbucket_t::operator[](sbucket_idx_t idx) {
+const char *sbucket_t::operator[](sbucket_idx_t idx) const {
 	const char * const str = m_idx[idx].str().c_str();
 	tracepoint(tp_sisdel, tp_sbucket_index, idx, str);
 	return str;

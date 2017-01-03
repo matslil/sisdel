@@ -96,6 +96,9 @@ C++ := clang++
 CCFILES := sbucket.cc
 CCFILES += file.cc
 CCFILES += mmap_file.cc
+CCFILES += token.cc
+CCFILES += error.cc
+CCFILES += position.cc
 CFILES += sisdel_tracepoints.c
 
 UNIT_TESTS := sbucket
@@ -113,7 +116,7 @@ override LIBS += -ldl
 
 .PHONY: all clean lint doc html pdf clean-doc distclean-doc
 
-# all: Makefile sisdel.o doc
+all: Makefile $(CCFILES:.cc=.o)
 
 # Make documents in all supported formats, currently html and pdf
 doc: html pdf
@@ -173,6 +176,11 @@ test: Makefile check_sbucket
 	@echo "   CC  $<"
 	$(CC) -std=gnu99 -MMD -MF $(@:.o=.d) -c $(CFLAGS) -o $@ $<
 
+# How to compile a C source file.
+%.o: %.cc
+	@echo "   CC  $<"
+	$(CC) -MMD -MF $(@:.o=.d) -c $(CCFLAGS) -o $@ $<
+
 #%.bc: %.cc sisdel_tracepoints.h
 #	@echo "   C++ $<"
 #	$(C++) -MMD -MF $(@:.o=.d) -c $(CCFLAGS) -o $@ $<
@@ -182,8 +190,8 @@ clean: clean-doc
 	rm -f $(addsuffix .[odchis],$(basename $(SRCFILES_ALL))) $(addsuffix .ii,$(basename $(SRCFILES_ALL)))
 
 # Create html files describing potential problems with the code
-lint: $(CFILES)
-	clang --analyze $(CPPFLAGS) $(LINTFLAGS) $^
+lint: $(CCFILES)
+	clang --analyze $(CCFLAGS) $(LINTFLAGS) $^
 
 # Google Test
 googletest:

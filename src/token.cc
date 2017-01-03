@@ -2,7 +2,7 @@
 
 Parser.
 
-Copyright (C) 2013 Mats G. Liljegren
+Copyright (C) 2013-2017 Mats G. Liljegren
 
 This file is part of Sisdel.
 
@@ -25,151 +25,20 @@ along with GCC; see the file COPYING.  If not see
 // token_t
 /////////////////////////////////////////////////////////////////////////////
 
-
-#include "token.hh"
-#include "hash.h"
 #include <cmath>
 
-tokenizer_t::tokenizer_t(environment_t& env, shared_ptr<mmap_file_t> file)
-	: m_env(env), m_file(file), m_token(-1, 1, 1),
-	  m_currp(file.buf()), m_bytes_left(file.buf_size())
-{
-}
-
-
-bool tokenizer_t::skip(const char *list)
-{
-	bool found = false;
-
-	while (m_bytes_left) {
-		unsigned i;
-
-		for (i = 0; list[i] != '\0'; i++) {
-			if (*m_currp == list[i]) {
-				found = true;
-				m_currp++;
-				m_bytes_left--;
-				break;
-			}
-		}
-		if (list[i] == '\0')
-			return found;
-	}
-
-	return found;
-}
-
-token_t& tokenizer_t::next()
-{
-	// Check whitespace, including comments
-	for(;;) {
-		if (!m_bytes_left) {
-			// End of file
-			token_t token(m_line, m_column);
-			return std::move(token);
-		}
-		if (*m_currp == ' ')
-			m_column++;
-		else if (*m_currp == '\t')
-			m_column += 8;
-		else if (*m_currp == '#') {
-			while (--m_bytes_left && (*(++m_currp) != '\n'));
-			continue;
-		}
-			
-		m_currp++;
-		m_bytes_left--;
-	}
-	
-	// Check for line feed/carriage return
-	if (skip("\n\r")) {
-		m_token.m_idx = token_t::eol;
-		return m_token;
-	}
-
-	// Check for string
-	if (if *m_currp == '"') {
-		m_currp++;
-		m_bytes_left--;
-		const char *str = m_currp;
-		
-	}
-}
-
-enum Status token_next(struct Scope *scope,
-		       TokenHandle handle,
-		       SbucketIdx *out_token,
-		       enum TokenType *out_type) {
-	const char * const old_linep = &handle->linep[handle->pos];
-	enum Status status;
-	size_t nr_chars = 0;
-	hash_t hash = 0;
-
-	if (handle->pos == handle->linelen) return status_end_of_file;
-
-	if ((handle->pos == 0) && ((handle->linep[handle->pos] == ' ') || (handle->linep[handle->pos] == '\t'))) {
-		/* Indent token */
-		*out_type = token_type_indent;
-		
-		while ((handle->pos != handle->linelen)
-		       && ((handle->linep[handle->pos] == ' ')
-			   || (handle->linep[handle->pos] == '\t'))) {
-			hash = hash_next(hash, handle->linep[handle->pos]);
-			nr_chars++;
-			handle->pos++;
-		}
-
-		hash = hash_finish(hash);
-
-		status = sbucket_find_add_hashed(
-			scope, handle->bucket, old_linep, nr_chars, hash, out_token);
-
-		if (status == status_success)
-			*out_type = token_type_indent;
-
-		return status;
-	}
-
-	/* Skip leading white-space */
-	while ((handle->pos != handle->linelen)
-	       && ((handle->linep[handle->pos] == ' ')
-		   || (handle->linep[handle->pos] == '\t'))) handle->pos++;
-
-	if (handle->pos == handle->linelen) return status_end_of_file;
-
-	hash = 0;
-
-	while ((handle->pos != handle->linelen)
-	       && ((handle->linep[handle->pos] != ' ')
-		   || (handle->linep[handle->pos] != '\t'))) {
-		hash = hash_next(hash, handle->linep[handle->pos]);
-		nr_chars++;
-		handle->pos++;
-	}
-
-	hash = hash_finish(hash);
-
-	status = sbucket_find_add_hashed(
-		scope, handle->bucket, old_linep, nr_chars, hash, out_token);
-
-	if (status == status_success)
-		*out_type = token_type_token;
-
-	return status;
-}
-
-
-
-
-//////////////////////////////////////////
+#include "token.hh"
+#include "hash.hh"
+#include "mmap_file.hh"
+#include "string.h"
 
 tokenizer_t::tokenizer_t(environment_t& env, const char *file)
-	: m_env(env), m_file(env, env.bucket().find_add(file)),
+	: m_env(env), m_file(env, env.sbucket().find_add(file)),
 	  m_startofline(m_file.get_position())
 {
 }
 
-static bool valid_digit(char ch, unsigned base)
+static bool valid_digit(char ch, char base)
 {
 	if (base > 10)
 		return ((ch >= '0') && (ch <= '9'))
@@ -178,7 +47,7 @@ static bool valid_digit(char ch, unsigned base)
 		return (ch >= '0') && (ch <= ('9' - base));
 }
 
-uint64_t tokenizer_t::get_number(unsigned base, unsigned divisor_step, const char *valid_digits, size_t& nr_digits)
+uint64_t tokenizer_t::get_number(char base, unsigned divisor_step, const char *valid_digits, size_t& nr_digits, const position_t& token_start)
 {
 	uint64_t nr = 0;
 	bool divisor_present = false;
@@ -201,13 +70,18 @@ uint64_t tokenizer_t::get_number(unsigned base, unsigned divisor_step, const cha
 				nr += (ch - 'A' + 10);
 			}
 			if (divisor_steps_left == 0)
-				throw std::system_error(EINVAL, std::generic_category(), "Expected divisor here");
+				throw parser_error(m_env, token_start,
+						   m_file.get_position(),
+						   "Expected ' divisor here");
+
 			else
 				divisor_steps_left--;
 			nr_digits++;
 		} else if (ch == '\'') {
 			if (divisor_present && (divisor_steps_left != 0))
-				throw std::system_error(EINVAL, std::generic_category(), "Did not expect divisor here");
+				throw parser_error(m_env, token_start,
+						   m_file.get_position(),
+						   "Did not expect ' divisor here");
 			divisor_steps_left = divisor_step;
 		} else {
 			break;
@@ -217,13 +91,14 @@ uint64_t tokenizer_t::get_number(unsigned base, unsigned divisor_step, const cha
 	}
 
 	if (divisor_present && (divisor_steps_left != 0))
-		throw std::system_error(EINVAL, std::generic_category(), "Did not expect divisor here");
+		throw parser_error(m_env, token_start, m_file.get_position(),
+				   "Did not expect ' divisor here");
 
 	return nr;
 }
 
 
-token_t tokenizer_t::next(void)
+const token_t tokenizer_t::next(void)
 {
 	for (;;) {
 		if (m_file.eof())
@@ -238,7 +113,7 @@ token_t tokenizer_t::next(void)
 		// Handle new-line
 		if (ch == '\n') {
 			// Handle multiple new-lines
-			(void) skip("\r\n");
+			(void) m_file.skip("\r\n");
 
 			// Remember line start for diagnostic messages
 			m_startofline = m_file.get_position();
@@ -263,7 +138,7 @@ token_t tokenizer_t::next(void)
 			}
 
 			// Return new-line token
-			token_t token(token_t::eol, m_startofline, nr_indents);
+			token_t token(token_t::eol, m_startofline, nr_tabs);
 			return token;
 		}
 
@@ -276,9 +151,9 @@ token_t tokenizer_t::next(void)
 			// Determine base
 			const char *valid_digits;
 			unsigned divisor_step;
-			unsigned base;
+			char base;
 			if (ch == '0')
-				skip();
+				m_file.skip();
 			switch (m_file.peek()) {
 			case 'b':
 				base = 2;
@@ -305,17 +180,20 @@ token_t tokenizer_t::next(void)
 				break;
 			}
 
-			unsigned nr_digits;
-			uint64_t integer = get_number(base, divisor_step, valid_digits, nr_digits);
+			size_t nr_digits;
+			uint64_t integer = get_number(base, divisor_step, valid_digits, nr_digits, start_of_number);
 
 			if (m_file.peek() == '.') {
 				m_file.skip();
-				uint64_t decimals = get_number(base, divisor_step, valid_digits, nr_digits);
+				uint64_t decimals = get_number(base, divisor_step, valid_digits, nr_digits, start_of_number);
 				double d = (double) integer + (decimals / pow(base, nr_digits));
 
 				// Ensure there's no trailing garbage
 				if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
-					throw std::system_error(EINVAL, std::generic_category, "Trailing garbage after string constant");
+					throw parser_error(
+						m_env, start_of_number,
+						m_file.get_position(),
+						"Trailing garbage after string constant");
 
 				// Return floating token
 				token_t token(token_t::floating,
@@ -326,11 +204,15 @@ token_t tokenizer_t::next(void)
 				
 			// Ensure there's no trailing garbage
 			if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
-				throw std::system_error(EINVAL, std::generic_category, "Trailing garbage after string constant");
+				throw parser_error(
+						m_env, start_of_number,
+						m_file.get_position(),
+						"Trailing garbage after string constant");
 
 
 			// Return integer token
-			token_t token(token_t::integer, start_of_number, nr);
+			token_t token(token_t::integer, start_of_number,
+				      integer);
 			return token;
 		}
 
@@ -353,11 +235,14 @@ token_t tokenizer_t::next(void)
 			const sbucket_idx_t idx = m_env.sbucket().find_add_hashed(start_of_content, size, hash);
 			
 			// Skip the matching '"'
-			skip();
+			m_file.skip();
 
 			// Ensure there's no trailing garbage
 			if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
-				throw std::system_error(EINVAL, std::generic_category, "Trailing garbage after string constant");
+				throw parser_error(
+					m_env, string_start,
+					m_file.get_position(),
+					"Trailing garbage after string constant");
 
 			// Return string token
 			token_t token(token_t::string, string_start, idx);
@@ -377,13 +262,17 @@ token_t tokenizer_t::next(void)
 		// Skip until invalid character or token separator
 		hash_t hash;
 		const size_t size = m_file.skip_until_hashed(
-			IDENTIFIER_INVALID_CHARS TOKEN_SEPARATOR, hash);
+			IDENTIFIER_INVALID_CHARS, hash);
 
 		if (size == 0)
-			throw std::system_error(EINVAL, std::generic_category, "Invalid identifier name");
+			throw parser_error(
+				m_env, identifier_start, m_file.get_position(),
+				"Invalid identifier name");
 		
 		if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
-			throw std::system_error(EINVAL, std::generic_category, "Invalid identifier name");
+			throw parser_error(
+				m_env, identifier_start, m_file.get_position(),
+				"Invalid identifier name");
 
 		// Create a string index from the identifier name
 		const sbucket_idx_t idx = m_env.sbucket().find_add_hashed(

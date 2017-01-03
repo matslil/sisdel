@@ -53,7 +53,7 @@ public:
 				      hash_t hash);
 	sbucket_idx_t find_add(const char *str);
 
-	const char *operator[](sbucket_idx_t idx);
+	const char *operator[](sbucket_idx_t idx) const;
 
 	// Defaults
 	sbucket_t(const sbucket_t &other) = default;
@@ -89,7 +89,6 @@ private:
 	static const size_t m_hash_entries = 4096;
 
 	std::array<sbucket_idx_t, m_hash_entries> m_hash;
-	sbucket_idx_t m_idx_next;
 	std::vector<idx_entry_t> m_idx;
 };
 

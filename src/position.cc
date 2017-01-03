@@ -1,8 +1,8 @@
 /*
 
-Exception object.
+Memory mapped file for the token parser.
 
-Copyright (C) 2017 Mats G. Liljegren
+Copyright (C) 2013-2016 Mats G. Liljegren
 
 This file is part of Sisdel.
 
@@ -16,30 +16,24 @@ FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 for more details.
 
 You should have received a copy of the GNU General Public License
-along with GCC; see the file COPYING.  If not see
+along with Sisdel; see the file COPYING.  If not see
 <http://www.gnu.org/licenses/>.
 
 */
 
-#ifndef ERROR_HH
-#define ERROR_HH
-
-
-#include <exception>
-
 #include "position.hh"
-#include "sbucket.hh"
-#include "environment.hh"
+#include <sstream>
+#include <string.h>
 
-class parser_error : public std::exception {
-public:
-	parser_error(const environment_t& env, const position_t& token_start,
-		     const position_t& error_at, const std::string& msg);
+std::string position_t::str(const environment_t& env) const
+{
+	std::stringstream ss;
+	ss << env.sbucket()[m_file] << ':' << m_line << ':' << m_col;
+	return ss.str();
+}
 
-	const char *what() const noexcept { return m_what.c_str(); }
-
-private:
-	std::string m_what;
-};
-
-#endif // ERROR_HH
+std::string position_t::buffln(void) const
+{
+	std::string str(m_buff, strnlen(m_start, m_end - m_start));
+	return str;
+}

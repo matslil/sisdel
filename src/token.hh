@@ -25,13 +25,13 @@ along with GCC; see the file COPYING.  If not see
 #define TOKEN_H
 
 #include <memory>
-#include "scope.h"
-#include "file.h"
-#include "sbucket.h"
-#include "value.hh"
+#include "environment.hh"
+#include "sbucket.hh"
 #include "position.hh"
+#include "mmap_file.hh"
 
 class token_t {
+public:
 	enum type_t : unsigned {
 		eof,
 		eol,
@@ -43,16 +43,13 @@ class token_t {
 
 	// type == eof
 	token_t(type_t type, const position_t& pos)
-		: m_type(type), m_position(pos), m_int(0) {}
+		: m_type(type), m_position(pos), m_value(0) {}
 
-	// type == eol
-	token_t(type_t type, const position_t& pos, size_t nr_indents)
-		: m_type(type), m_position(pos), m_value(name),
-		  m_nr_indents(nr_indents) {}
-
-	// type = integer
-	token_t(type_t type, const position_t& pos, uint64_t integer)
-		: m_type(type), m_int(integer), m_position(pos) {}
+	// type == eol or integer
+	// For eol, value is number of indents.
+	// For integer, this is the actual integer value
+	token_t(type_t type, const position_t& pos, size_t value)
+		: m_type(type), m_position(pos), m_value(value) {}
 
 	// type = floating
 	token_t(type_t type, const position_t& pos, double floating)
@@ -62,19 +59,19 @@ class token_t {
 	token_t(type_t type, const position_t& pos, sbucket_idx_t str)
 		: m_type(type), m_position(pos), m_string(str) {}
 
+private:
 	type_t m_type;
 	position_t m_position;
 
 	union {
-		uint64_t m_int;         // Only for type number_integer
 		double m_float;         // Only for type number_float
 		sbucket_idx_t m_string; // Only for type string & identifier
-		size_t m_nr_indents;    // Only given for type eol
+		size_t m_value     ;    // Only given for type eol & integer
 	};
 };
 	
-#define IDENTIFIER_INVALID_CHARS "\"()[]\{}'#"
 #define TOKEN_SEPARATORS         "\n\r\t "
+#define IDENTIFIER_INVALID_CHARS "\"()[]\{}'#" TOKEN_SEPARATORS
 
 class tokenizer_t {
 public:
@@ -84,11 +81,11 @@ public:
 	const token_t next(void);
 
 private:
-	uint64_t get_number(unsigned base, unsigned divisor_step, const char *valid_digits, size_t& nr_digits);
+	uint64_t get_number(char base, unsigned divisor_step, const char *valid_digits, size_t& nr_digits, const position_t& token_start);
 
 	environment_t& m_env;
 	mmap_file_t m_file;
-	const position_t m_startofline;
+	position_t m_startofline;
 };
 
 #endif /* TOKEN_H */
