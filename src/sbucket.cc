@@ -50,7 +50,8 @@ sbucket_idx_t sbucket_t::find_add_hashed(const char *str,
 	sbucket_idx_t idx = m_hash[hash % m_hash_entries];
 	
 	while (idx >= 0) {
-		if (m_idx[idx].str().compare(0, str_len, str) == 0) {
+	  if ((m_idx[idx].str().compare(0, str_len, str) == 0)
+	      && (m_idx[idx].str().length() == str_len)) {
 			tracepoint(tp_sisdel, tp_sbucket_find, hash, str, str_len, idx);
 			return idx;
 		}
@@ -92,9 +93,10 @@ sbucket_idx_t sbucket_t::find_add(const char *str)
 {
 	hash_t hash = 0;
 	size_t str_len = 0;
+	const char *curr;
 	
-	for (; *str != '\0'; str++) {
-		hash = hash_next(*str, hash);
+	for (curr = str; *curr != '\0'; curr++) {
+		hash = hash_next(*curr, hash);
 		str_len++;
 	}
 	

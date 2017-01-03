@@ -187,7 +187,7 @@ test: Makefile check_sbucket
 
 # Clean all temporary files
 clean: clean-doc
-	rm -f $(addsuffix .[odchis],$(basename $(SRCFILES_ALL))) $(addsuffix .ii,$(basename $(SRCFILES_ALL)))
+	rm -f $(addsuffix .[odchis],$(basename $(SRCFILES_ALL))) $(addsuffix .ii,$(basename $(SRCFILES_ALL))) gtest-all.[od]
 
 # Create html files describing potential problems with the code
 lint: $(CCFILES)
@@ -199,10 +199,10 @@ googletest:
 
 gtest-all.cc: googletest
 
-.SECONDEXPANSION:
+gtest-all.a: gtest-all.cc
 
-$(addprefix check_,$(UNIT_TESTS)): $(CCFILES) $$@.cc gtest-all.cc $(CFILES:.c=.o)
-	@echo "   LD  $@"
+# Sbucket unit test
+check_sbucket: check_sbucket.o sbucket.o gtest-all.o $(CFILES:.c=.o)
 	$(C++) $(CCFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 endif # ifeq ($(origin BUILDING),undefined)
