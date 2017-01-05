@@ -193,6 +193,10 @@ clean: clean-doc
 lint: $(CCFILES)
 	clang --analyze $(CCFLAGS) $(LINTFLAGS) $^
 
+test_scanner: test_scanner.o $(CCFILES:.cc=.o) $(CFILES:.c=.o)
+	@echo "   LD  $@"
+	$(C++) $(CCFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+
 # Google Test
 googletest:
 	git clone https://github.com/google/googletest.git
