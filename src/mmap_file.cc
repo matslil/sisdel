@@ -64,17 +64,10 @@ mmap_file_t::mmap_t::~mmap_t()
 
 mmap_file_t::mmap_file_t(environment_t &env, sbucket_idx_t name)
 	: m_map(env.sbucket()[name]),
-	  m_pos(m_map.map(), m_map.map(), m_map.map() + m_map.file_size(), name),
+	  m_pos(m_map.map(), m_map.map(), m_map.map() + m_map.file_size(),
+		this),
 	  m_filename(name)
 {}
-
-char mmap_file_t::get()
-{
-	if (eof()) return '\0';
-	const char ch = *m_pos.m_buff;
-	skip();
-	return ch;
-}
 
 size_t mmap_file_t::skip(char skip_ch)
 {

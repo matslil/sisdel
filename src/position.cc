@@ -22,18 +22,18 @@ along with Sisdel; see the file COPYING.  If not see
 */
 
 #include "position.hh"
+#include "mmap_file.hh"
 #include <sstream>
 #include <string.h>
-
-std::string position_t::str(const environment_t& env) const
-{
-	std::stringstream ss;
-	ss << env.sbucket()[m_file] << ':' << m_line << ':' << m_col;
-	return ss.str();
-}
 
 std::string position_t::buffln(void) const
 {
 	std::string str(m_buff, strnlen(m_start, m_end - m_start));
 	return str;
+}
+
+std::ostream &operator<<(std::ostream &os, position_t const &m)
+{ 
+	os << m.m_file->filename() << ':' << m.m_line << ':' << m.m_col;
+	return os;
 }

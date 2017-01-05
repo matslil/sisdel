@@ -40,7 +40,6 @@ public:
 	constexpr size_t buf_size() const noexcept { return m_map.file_size(); }
 
 	constexpr const char *str() const noexcept { return m_pos.m_buff; }
-	char get();
 	constexpr char peek(void) const noexcept
 		{ return eof() ? '\0' : *m_pos.m_buff; }
 	constexpr bool eof(void) const noexcept

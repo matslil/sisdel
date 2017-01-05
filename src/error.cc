@@ -31,10 +31,10 @@ static std::string repeat_spaces(size_t nr)
 	return str;
 }
 
-parser_error::parser_error(const environment_t& env, const position_t& token_start, const position_t& error_at, const std::string& msg)
+parser_error::parser_error(const position_t& token_start, const position_t& error_at, const std::string& msg)
 {
 	std::stringstream ss;
-	ss << token_start.str(env) << ": error: " << msg
+	ss << token_start << ": error: " << msg
 	   << "\n        " << token_start.buffln()
 	   << "\n        " << repeat_spaces(error_at.m_col);
 

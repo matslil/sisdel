@@ -70,7 +70,7 @@ uint64_t tokenizer_t::get_number(char base, unsigned divisor_step, const char *v
 				nr += (ch - 'A' + 10);
 			}
 			if (divisor_steps_left == 0)
-				throw parser_error(m_env, token_start,
+				throw parser_error(token_start,
 						   m_file.get_position(),
 						   "Expected ' divisor here");
 
@@ -79,7 +79,7 @@ uint64_t tokenizer_t::get_number(char base, unsigned divisor_step, const char *v
 			nr_digits++;
 		} else if (ch == '\'') {
 			if (divisor_present && (divisor_steps_left != 0))
-				throw parser_error(m_env, token_start,
+				throw parser_error(token_start,
 						   m_file.get_position(),
 						   "Did not expect ' divisor here");
 			divisor_steps_left = divisor_step;
@@ -91,7 +91,7 @@ uint64_t tokenizer_t::get_number(char base, unsigned divisor_step, const char *v
 	}
 
 	if (divisor_present && (divisor_steps_left != 0))
-		throw parser_error(m_env, token_start, m_file.get_position(),
+		throw parser_error(token_start, m_file.get_position(),
 				   "Did not expect ' divisor here");
 
 	return nr;
@@ -191,7 +191,7 @@ const token_t tokenizer_t::next(void)
 				// Ensure there's no trailing garbage
 				if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
 					throw parser_error(
-						m_env, start_of_number,
+						start_of_number,
 						m_file.get_position(),
 						"Trailing garbage after string constant");
 
@@ -205,7 +205,7 @@ const token_t tokenizer_t::next(void)
 			// Ensure there's no trailing garbage
 			if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
 				throw parser_error(
-						m_env, start_of_number,
+						start_of_number,
 						m_file.get_position(),
 						"Trailing garbage after string constant");
 
@@ -240,7 +240,7 @@ const token_t tokenizer_t::next(void)
 			// Ensure there's no trailing garbage
 			if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
 				throw parser_error(
-					m_env, string_start,
+					string_start,
 					m_file.get_position(),
 					"Trailing garbage after string constant");
 
@@ -266,12 +266,12 @@ const token_t tokenizer_t::next(void)
 
 		if (size == 0)
 			throw parser_error(
-				m_env, identifier_start, m_file.get_position(),
+				identifier_start, m_file.get_position(),
 				"Invalid identifier name");
 		
 		if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
 			throw parser_error(
-				m_env, identifier_start, m_file.get_position(),
+				identifier_start, m_file.get_position(),
 				"Invalid identifier name");
 
 		// Create a string index from the identifier name
