@@ -101,9 +101,9 @@ CCFILES += error.cc
 CCFILES += position.cc
 CFILES += sisdel_tracepoints.c
 
-UNIT_TESTS := sbucket
+UNIT_TESTS := check_sbucket check_mmap_file
 
-SRCFILES_ALL := $(CCFILES) $(CFILES) $(addsuffix .cc,$(addprefix check_,$(UNIT_TESTS)))
+SRCFILES_ALL := $(CCFILES) $(CFILES) $(addsuffix .cc,$(UNIT_TESTS))
 
 LIBS :=
 
@@ -165,7 +165,7 @@ sisdel.html: %.html: %.md %.css sisdel.md type-hierarchy-graph.svg type-relation
 	dot -Tsvg $< > $@
 
 # Run unit test
-test: Makefile check_sbucket
+test: Makefile $(UNIT_TESTS)
 
 # How to create C (and header) source files from a tracepoint template file
 #sisdel_tracepoints.c sisdel_tracepoints.h: sisdel_tracepoints.tp
@@ -203,6 +203,17 @@ gtest-all.a: gtest-all.cc
 
 # Sbucket unit test
 check_sbucket: check_sbucket.o sbucket.o gtest-all.o $(CFILES:.c=.o)
+	@echo "   LD  $@"
 	$(C++) $(CCFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+check_mmap_file.data:
+	cp $(SRCPATH)/unit-test/$@ .
+
+# Mmap_file unit test
+check_mmap_file: check_mmap_file.o mmap_file.o position.o sbucket.o file.o gtest-all.o $(CFILES:.c=.o) check_mmap_file.data
+	@echo "   LD  $@"
+	$(C++) $(CCFLAGS) $(LDFLAGS) -o $@ $(filter %.o,$^) $(LIBS)
+
+-include *.d
 
 endif # ifeq ($(origin BUILDING),undefined)
