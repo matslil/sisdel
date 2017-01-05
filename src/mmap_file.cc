@@ -62,11 +62,11 @@ mmap_file_t::mmap_t::~mmap_t()
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-mmap_file_t::mmap_file_t(environment_t &env, sbucket_idx_t name)
-	: m_map(env.sbucket()[name]),
+mmap_file_t::mmap_file_t(environment_t &env, const char * name)
+	: m_env(env), m_map(name),
 	  m_pos(m_map.map(), m_map.map(), m_map.map() + m_map.file_size(),
 		this),
-	  m_filename(name)
+	  m_filename(m_env.sbucket().find_add(name))
 {}
 
 size_t mmap_file_t::skip(char skip_ch)

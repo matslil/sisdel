@@ -33,7 +33,7 @@ along with GCC; see the file COPYING.  If not see
 
 class parser_error : public std::exception {
 public:
-	parser_error(const environment_t& env, const position_t& token_start,
+	parser_error(const position_t& token_start,
 		     const position_t& error_at, const std::string& msg);
 
 	const char *what() const noexcept { return m_what.c_str(); }

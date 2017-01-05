@@ -32,9 +32,8 @@ along with Sisdel; see the file COPYING.  If not see
 
 class mmap_file_t {
 public:
-	mmap_file_t(environment_t &env, sbucket_idx_t name);
-	mmap_file_t(mmap_file_t &&from);
-	~mmap_file_t() {}
+	mmap_file_t(environment_t &env, const char *name);
+
 	mmap_file_t& operator=(mmap_file_t &&from);
 
 	constexpr size_t buf_size() const noexcept { return m_map.file_size(); }
@@ -55,8 +54,8 @@ public:
 		{ return m_pos;}
 	void set_position(const position_t& pos) noexcept { m_pos = pos; }
 
-	constexpr sbucket_idx_t filename(void) const noexcept
-		{ return m_filename; }
+	constexpr const char * filename(void) const
+		{ return m_env.sbucket()[m_filename]; }
 	
 	// Forbidden methods
 	mmap_file_t() = delete;
@@ -85,6 +84,7 @@ private:
 		const char * const m_map;
 	};
 
+	environment_t& m_env;
 	mmap_t m_map;
 	position_t m_pos;
 	const sbucket_idx_t m_filename;

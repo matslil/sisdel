@@ -25,6 +25,7 @@ along with GCC; see the file COPYING.  If not see
 #define TOKEN_H
 
 #include <memory>
+#include <system_error>
 #include "environment.hh"
 #include "sbucket.hh"
 #include "position.hh"
@@ -59,6 +60,33 @@ public:
 	token_t(type_t type, const position_t& pos, sbucket_idx_t str)
 		: m_type(type), m_position(pos), m_string(str) {}
 
+	constexpr type_t type(void) const noexcept { return m_type; }
+	constexpr const position_t& position(void) const noexcept
+		{ return m_position; }
+	constexpr double float_value(void) const throw(std::system_error)
+		{
+			if (m_type != floating) throw std::system_error(
+				ENOTSUP, std::generic_category(),
+				"Requesed floating value for non-floating token");
+			return m_float;
+		}
+	constexpr sbucket_idx_t string_value(void) const throw(std::system_error)
+		{
+			if ((m_type != string) && (m_type != identifier))
+				throw std::system_error(
+					ENOTSUP, std::generic_category(),
+					"Requested string value for non-string or non-identifier token");
+			return m_string;
+		}
+	constexpr size_t value(void) const throw(std::system_error)
+		{
+			if ((m_type != eol) && (m_type != integer))
+				throw std::system_error(
+					ENOTSUP, std::generic_category(),
+					"Requested integer value for non-integer or non-eol token");
+			return m_value;
+		}
+	
 private:
 	type_t m_type;
 	position_t m_position;
@@ -69,14 +97,15 @@ private:
 		size_t m_value     ;    // Only given for type eol & integer
 	};
 };
-	
+
+std::ostream& operator<<(std::ostream& os, const token_t& t);
+
 #define TOKEN_SEPARATORS         "\n\r\t "
 #define IDENTIFIER_INVALID_CHARS "\"()[]\{}'#" TOKEN_SEPARATORS
 
 class tokenizer_t {
 public:
 	tokenizer_t(environment_t& env, const char* file);
-	~tokenizer_t();
 
 	const token_t next(void);
 

@@ -26,6 +26,7 @@ along with GCC; see the file COPYING.  If not see
 /////////////////////////////////////////////////////////////////////////////
 
 #include <cmath>
+#include <ostream>
 
 #include "token.hh"
 #include "hash.hh"
@@ -33,7 +34,7 @@ along with GCC; see the file COPYING.  If not see
 #include "string.h"
 
 tokenizer_t::tokenizer_t(environment_t& env, const char *file)
-	: m_env(env), m_file(env, env.sbucket().find_add(file)),
+	: m_env(env), m_file(env, file),
 	  m_startofline(m_file.get_position())
 {
 }
@@ -286,4 +287,38 @@ const token_t tokenizer_t::next(void)
 	// Return end-of-file token
 	token_t token(token_t::eof, m_file.get_position());
 	return token;
+}
+
+std::ostream& operator<<(std::ostream& os, const token_t& t)
+{
+	switch (t.type()) {
+	case token_t::eof:
+		os << "eof()";
+		break;
+	case token_t::eol:
+		os << "eol(indent: " << t.value()
+		   << ")";
+		break;
+	case token_t::integer:
+		os << "integer(" << t.value()
+		   << ")";
+		break;
+	case token_t::floating:
+		os << "float(" << t.float_value()
+		   << ")";
+		break;
+	case token_t::string:
+		os << "string(idx: "
+		   << t.string_value() << ")";
+		break;
+	case token_t::identifier:
+		os << "string(idx: "
+		   << t.string_value() << ")";
+		break;
+	default:
+		os << "unknown()";
+		break;
+	}
+
+	return os;
 }

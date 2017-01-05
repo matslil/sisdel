@@ -32,7 +32,7 @@ std::string position_t::buffln(void) const
 	return str;
 }
 
-std::ostream &operator<<(std::ostream &os, position_t const &m)
+std::ostream& operator<<(std::ostream& os, const position_t& m)
 { 
 	os << m.m_file->filename() << ':' << m.m_line << ':' << m.m_col;
 	return os;
