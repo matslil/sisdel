@@ -47,22 +47,22 @@ int main(int argc, const char *argv[])
 	}
 
 	catch (const parser_error& e) {
-		std::cerr << "Parser error: " << e.what() << "\n";
+		std::cerr << "\nParser error: " << e.what() << "\n";
 		return 2;
 	}
 	
 	catch (const std::system_error& e) {
-		std::cerr << "System error: " << e.what() << "\n";
+		std::cerr << "\nSystem error: " << e.what() << "\n";
 		return 3;
 	}
 
 	catch (const std::runtime_error& e) {
-		std::cerr << "Runtime error: " << e.what() << "\n";
+		std::cerr << "\nRuntime error: " << e.what() << "\n";
 		return 4;
 	}
 
 	catch (...) {
-		std::cerr << "Unknown error " << "\n";
+		std::cerr << "\nUnknown error " << "\n";
 		return 5;
 	}
 
