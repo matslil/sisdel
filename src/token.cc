@@ -48,11 +48,10 @@ static bool valid_digit(char ch, char base)
 		return (ch >= '0') && (ch <= ('0' + base - 1));
 }
 
-uint64_t tokenizer_t::get_number(char base, unsigned divisor_step, const char *valid_digits, size_t& nr_digits, const position_t& token_start)
+uint64_t tokenizer_t::get_number(char base, const char *valid_digits,
+				 size_t& nr_digits)
 {
 	uint64_t nr = 0;
-	bool divisor_present = false;
-	unsigned divisor_steps_left = divisor_step;
 	char ch;
 
 	nr_digits = 0;
@@ -70,30 +69,13 @@ uint64_t tokenizer_t::get_number(char base, unsigned divisor_step, const char *v
 				nr *= base;
 				nr += (ch - 'A' + 10);
 			}
-			if (divisor_steps_left == 0)
-				throw parser_error(token_start,
-						   m_file.get_position(),
-						   "Expected ' divisor here");
-
-			else
-				divisor_steps_left--;
 			nr_digits++;
-		} else if (ch == '\'') {
-			if (divisor_present && (divisor_steps_left != 0))
-				throw parser_error(token_start,
-						   m_file.get_position(),
-						   "Did not expect ' divisor here");
-			divisor_steps_left = divisor_step;
 		} else {
 			break;
 		}
 
 		m_file.skip();
 	}
-
-	if (divisor_present && (divisor_steps_left != 0))
-		throw parser_error(token_start, m_file.get_position(),
-				   "Did not expect ' divisor here");
 
 	return nr;
 }
@@ -151,50 +133,47 @@ const token_t tokenizer_t::next(void)
 
 			// Determine base
 			const char *valid_digits;
-			unsigned divisor_step;
 			char base;
 			if (ch == '0')
 				m_file.skip();
 			switch (m_file.peek()) {
 			case 'b':
 				base = 2;
-				divisor_step = 4;
 				valid_digits = "01";
 				m_file.skip();
 				break;
 			case 'o':
 				base = 8;
-				divisor_step = 4;
 				valid_digits = "01234567";
 				m_file.skip();
 				break;
 			case 'x':
 				base = 16;
-				divisor_step = 4;
 				valid_digits = "0123456789abcdefABCDEF";
 				m_file.skip();
 				break;
 			default:
 				base = 10;
-				divisor_step = 3;
 				valid_digits = "0123456789";
 				break;
 			}
 
 			size_t nr_digits;
-			uint64_t integer = get_number(base, divisor_step, valid_digits, nr_digits, start_of_number);
+			uint64_t integer = get_number(base, valid_digits,
+						      nr_digits);
 
 			if (m_file.peek() == '.') {
 				m_file.skip();
-				uint64_t decimals = get_number(base, divisor_step, valid_digits, nr_digits, start_of_number);
-				double d = (double) integer + (decimals / pow(base, nr_digits));
+				uint64_t decimals = get_number(
+					base, valid_digits, nr_digits);
+				double d = (double) integer + ((double) decimals / pow(base, nr_digits));
 
 				// Ensure there's no trailing garbage
 				if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
 					throw parser_error(
 						start_of_number,
 						m_file.get_position(),
-						"Trailing garbage after string constant");
+						"Trailing garbage after float constant");
 
 				// Return floating token
 				token_t token(token_t::floating,
@@ -208,7 +187,7 @@ const token_t tokenizer_t::next(void)
 				throw parser_error(
 						start_of_number,
 						m_file.get_position(),
-						"Trailing garbage after string constant");
+						"Trailing garbage after integer constant");
 
 
 			// Return integer token

@@ -91,7 +91,7 @@ private:
 	type_t m_type;
 	position_t m_position;
 
-	union {
+	union { // FIXME: Float should store precision (nr of digits)
 		double m_float;         // Only for type number_float
 		sbucket_idx_t m_string; // Only for type string & identifier
 		size_t m_value     ;    // Only given for type eol & integer
@@ -110,7 +110,7 @@ public:
 	const token_t next(void);
 
 private:
-	uint64_t get_number(char base, unsigned divisor_step, const char *valid_digits, size_t& nr_digits, const position_t& token_start);
+	uint64_t get_number(char base, const char *valid_digits, size_t& nr_digits);
 
 	environment_t& m_env;
 	mmap_file_t m_file;
