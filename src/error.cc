@@ -36,7 +36,7 @@ parser_error::parser_error(const position_t& token_start, const position_t& erro
 	std::stringstream ss;
 	ss << token_start << ": error: " << msg
 	   << "\n        " << token_start.buffln()
-	   << "\n        " << repeat_spaces(error_at.m_col) << '^';
+	   << "\n        " << repeat_spaces(error_at.m_col - 1) << '^';
 
 	m_what = ss.str();
 }
