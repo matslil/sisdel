@@ -43,9 +43,9 @@ static bool valid_digit(char ch, char base)
 {
 	if (base > 10)
 		return ((ch >= '0') && (ch <= '9'))
-			|| ((ch >= 'a') && (ch <= ('a' + base - 10)));
+			|| ((ch >= 'a') && (ch <= ('a' + base - 11)));
 	else
-		return (ch >= '0') && (ch <= ('9' - base));
+		return (ch >= '0') && (ch <= ('0' + base - 1));
 }
 
 uint64_t tokenizer_t::get_number(char base, unsigned divisor_step, const char *valid_digits, size_t& nr_digits, const position_t& token_start)

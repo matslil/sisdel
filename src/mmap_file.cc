@@ -142,6 +142,8 @@ size_t mmap_file_t::skip_until_hashed(const char* until_str, hash_t& hash)
 	return count;
 }
 
+// This function will move the current character one step forward. This function
+// is called by all other functions for moving the current character pointer.
 void mmap_file_t::skip(void)
 {
 	if (eof())
@@ -149,7 +151,9 @@ void mmap_file_t::skip(void)
 	if ((*m_pos.m_buff) == '\n') {
 		m_pos.m_line++;
 		m_pos.m_col = 1;
-		m_pos.m_start = m_pos.m_buff;
+		m_pos.m_start = m_pos.m_buff + 1;
+	} else if ((*m_pos.m_buff) == '\t') {
+		m_pos.m_col += m_env.spaces_per_tab;
 	} else {
 		m_pos.m_col++;
 	}

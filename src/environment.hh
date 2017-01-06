@@ -36,6 +36,8 @@ public:
 	sbucket_t& sbucket() { return m_sbucket; }
 	const sbucket_t& sbucket() const { return m_sbucket; }
 
+	const size_t spaces_per_tab = 8;
+
 	// I guess move should using default
 	environment_t(environment_t &&) = default;
 	environment_t& operator=(environment_t &&) = default;

@@ -26,9 +26,22 @@ along with Sisdel; see the file COPYING.  If not see
 #include <sstream>
 #include <string.h>
 
+size_t strsz(const char * str, char find, const char * end)
+{
+	size_t idx = 0;
+	
+	while (str != end) {
+		if (str[idx] == find)
+			return idx;
+		idx++;
+	}
+
+	return idx;
+}
+
 std::string position_t::buffln(void) const
 {
-	std::string str(m_buff, strnlen(m_start, m_end - m_start));
+	std::string str(m_start, strsz(m_start, '\n', m_end));
 	return str;
 }
 
