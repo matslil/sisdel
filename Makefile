@@ -1,3 +1,8 @@
+# Current dependencies:
+# - Google Test framework
+# - Boost, multiprecision library (for mpfr_float etc)
+# - GNU MPFR C library (used by boost)
+
 ifeq ($(origin BUILDING),undefined)
 # Determine source path from where this Makefile is
 export SRCPATH := $(abspath $(dir $(shell readlink -e $(CURDIR)/$(lastword $(MAKEFILE_LIST)))))
@@ -109,10 +114,15 @@ LIBS :=
 
 export LD_RUN_PATH += $(LTTNG)/lib
 
+# LTTng tracer
 override LIBS += -L$(LTTNG)/lib
 override LIBS += -llttng-ust
+
 override LIBS += -lrt
 override LIBS += -ldl
+
+# Multiprecision floats and ints
+override LIBS += -lmpfr -lgmp
 
 .PHONY: all clean lint doc html pdf clean-doc distclean-doc
 

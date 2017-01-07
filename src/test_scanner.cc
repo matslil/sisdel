@@ -34,15 +34,13 @@ int main(int argc, const char *argv[])
 	tokenizer_t lexer(e, argv[1]);
 	
 	try {
-		for (;;) {
-			const token_t t = lexer.next();
-			std::cout << t;
-			if (t.type() == token_t::eol)
+		std::unique_ptr<token_t> t;
+		while (lexer.next(t)) {
+			std::cout << *t;
+			if (t->type() == token_t::eol)
 				std::cout << '\n';
 			else
 				std::cout << ' ';
-			if (t.type() == token_t::eof)
-				break;
 		}
 	}
 

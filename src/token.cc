@@ -27,11 +27,30 @@ along with GCC; see the file COPYING.  If not see
 
 #include <cmath>
 #include <ostream>
+#include <string.h>
 
 #include "token.hh"
 #include "hash.hh"
 #include "mmap_file.hh"
 #include "string.h"
+
+#define TOKEN_SEPARATORS         "\n\r\t "
+#define SINGLE_LETTER_IDENTIFIERS "()[]\{}"
+#define IDENTIFIER_INVALID_CHARS "\"'#" TOKEN_SEPARATORS
+
+#ifndef NDEBUG
+
+long long value_of_int(token_integer_t::mp_int value)
+{
+	return (long long)value;
+}
+
+long double value_of_float(token_float_t::mp_float value)
+{
+	return (long double)value;
+}
+
+#endif // NDEBUG
 
 tokenizer_t::tokenizer_t(environment_t& env, const char *file)
 	: m_env(env), m_file(env, file),
@@ -48,10 +67,9 @@ static bool valid_digit(char ch, char base)
 		return (ch >= '0') && (ch <= ('0' + base - 1));
 }
 
-uint64_t tokenizer_t::get_number(char base, const char *valid_digits,
-				 size_t& nr_digits)
+void tokenizer_t::get_number(token_integer_t::mp_int& nr, char base,
+			     const char *valid_digits, size_t& nr_digits)
 {
-	uint64_t nr = 0;
 	char ch;
 
 	nr_digits = 0;
@@ -76,12 +94,9 @@ uint64_t tokenizer_t::get_number(char base, const char *valid_digits,
 
 		m_file.skip();
 	}
-
-	return nr;
 }
 
-
-const token_t tokenizer_t::next(void)
+bool tokenizer_t::next(std::unique_ptr<token_t>& token)
 {
 	for (;;) {
 		if (m_file.eof())
@@ -121,8 +136,8 @@ const token_t tokenizer_t::next(void)
 			}
 
 			// Return new-line token
-			token_t token(token_t::eol, m_startofline, nr_tabs);
-			return token;
+			token.reset(new token_eol_t(m_startofline, nr_tabs));
+			return true;
 		}
 
 		if (valid_digit(ch, 10)) {
@@ -159,14 +174,19 @@ const token_t tokenizer_t::next(void)
 			}
 
 			size_t nr_digits;
-			uint64_t integer = get_number(base, valid_digits,
-						      nr_digits);
+			token_integer_t::mp_int integer(0);
+			get_number(integer, base, valid_digits, nr_digits);
 
 			if (m_file.peek() == '.') {
+				size_t nr_decimals;
 				m_file.skip();
-				uint64_t decimals = get_number(
-					base, valid_digits, nr_digits);
-				double d = (double) integer + ((double) decimals / pow(base, nr_digits));
+				token_integer_t::mp_int decimals(0);
+				get_number(decimals, base, valid_digits,
+					   nr_decimals);
+				token_float_t::mp_float d;
+				d.precision(((nr_digits + nr_decimals) * base) / 10);
+				d = (token_float_t::mp_float)decimals / pow((token_float_t::mp_float) base, (token_float_t::mp_float) nr_digits);
+				d += integer;
 
 				// Ensure there's no trailing garbage
 				if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
@@ -176,10 +196,9 @@ const token_t tokenizer_t::next(void)
 						"Trailing garbage after float constant");
 
 				// Return floating token
-				token_t token(token_t::floating,
-					      start_of_number,
-					      d);
-				return token;
+				token.reset(new token_float_t(
+						    start_of_number, d));
+				return true;
 			}
 				
 			// Ensure there's no trailing garbage
@@ -191,9 +210,9 @@ const token_t tokenizer_t::next(void)
 
 
 			// Return integer token
-			token_t token(token_t::integer, start_of_number,
-				      integer);
-			return token;
+			token.reset(new token_integer_t(
+					    start_of_number, integer));
+			return true;
 		}
 
 		if (ch == '"') {
@@ -225,8 +244,8 @@ const token_t tokenizer_t::next(void)
 					"Trailing garbage after string constant");
 
 			// Return string token
-			token_t token(token_t::string, string_start, idx);
-			return token;
+			token.reset(new token_string_t(string_start, idx));
+			return true;
 		}
 
 		// If a comment, skip the rest of the line
@@ -234,6 +253,11 @@ const token_t tokenizer_t::next(void)
 			m_file.skip_until('\n');
 			continue;
 		}
+
+		// Check for single letter identifiers
+		bool is_single_letter_identifier = false;
+		if (strchr(SINGLE_LETTER_IDENTIFIERS, ch) != NULL)
+			is_single_letter_identifier = true;
 		
 		// Anything else becomes a name of an identifier
 		const position_t identifier_start = m_file.get_position();
@@ -254,45 +278,54 @@ const token_t tokenizer_t::next(void)
 				identifier_start, m_file.get_position(),
 				"Invalid identifier name");
 
+		// Check that if this is supposed to be a single letter
+		// identifier, it doesn't consist of multiple letters
+		if (is_single_letter_identifier && (size > 1))
+			throw parser_error(
+				identifier_start, m_file.get_position(),
+				"Invalid identifier name");
+
 		// Create a string index from the identifier name
 		const sbucket_idx_t idx = m_env.sbucket().find_add_hashed(
 			start_of_content, size, hash);
 		
 		// Return identifier token
-		token_t token(token_t::identifier, identifier_start, idx);
-		return token;
+		token.reset(new token_identifier_t(identifier_start, idx));
+		return true;
 	}
 
-	// Return end-of-file token
-	token_t token(token_t::eof, m_file.get_position());
-	return token;
+	// No more input
+	return false;
 }
 
 std::ostream& operator<<(std::ostream& os, const token_t& t)
 {
 	switch (t.type()) {
-	case token_t::eof:
-		os << "eof()";
-		break;
 	case token_t::eol:
-		os << "eol(indent: " << t.value()
-		   << ")";
+		os << "eol(indent: "
+		   << dynamic_cast<const token_eol_t&>(t).indent_level()
+		   << ')';
 		break;
 	case token_t::integer:
-		os << "integer(" << t.value()
-		   << ")";
+		os << "integer("
+		   << dynamic_cast<const token_integer_t&>(t).value()
+		   << ')';
 		break;
 	case token_t::floating:
-		os << "float(" << t.float_value()
-		   << ")";
+	{
+		const token_float_t& tf(dynamic_cast<const token_float_t&>(t));
+		os.precision(tf.value().precision());
+		os << "float(" << tf.value() << ':' << tf.value().precision()
+		   << ')';
 		break;
+	}
 	case token_t::string:
 		os << "string(idx: "
-		   << t.string_value() << ")";
+		   << dynamic_cast<const token_string_t&>(t).string() << ')';
 		break;
 	case token_t::identifier:
 		os << "string(idx: "
-		   << t.string_value() << ")";
+		   << dynamic_cast<const token_identifier_t&>(t).name() << ')';
 		break;
 	default:
 		os << "unknown()";

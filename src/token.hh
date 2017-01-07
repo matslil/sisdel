@@ -30,87 +30,131 @@ along with GCC; see the file COPYING.  If not see
 #include "sbucket.hh"
 #include "position.hh"
 #include "mmap_file.hh"
+#include <boost/multiprecision/mpfr.hpp>
+#include <boost/multiprecision/gmp.hpp>
 
 class token_t {
 public:
-	enum type_t : unsigned {
-		eof,
+	typedef enum {
 		eol,
-		integer,
-		floating,
 		string,
-		identifier
-	};
+		identifier,
+		floating,
+		integer
+	} type_t;
 
-	// type == eof
-	token_t(type_t type, const position_t& pos)
-		: m_type(type), m_position(pos), m_value(0) {}
+	virtual ~token_t() {};
 
-	// type == eol or integer
-	// For eol, value is number of indents.
-	// For integer, this is the actual integer value
-	token_t(type_t type, const position_t& pos, size_t value)
-		: m_type(type), m_position(pos), m_value(value) {}
+	virtual type_t type(void) const noexcept = 0;
 
-	// type = floating
-	token_t(type_t type, const position_t& pos, double floating)
-		: m_type(type), m_position(pos), m_float(floating) {}
+	virtual const position_t& position(void) const noexcept = 0;
+};
 
-	// type = string or identifier
-	token_t(type_t type, const position_t& pos, sbucket_idx_t str)
-		: m_type(type), m_position(pos), m_string(str) {}
+class token_eol_t : public token_t {
+public:
+	token_eol_t(const position_t& pos, size_t indent_level)
+		: m_position(pos), m_indent_level(indent_level) {}
 
-	constexpr type_t type(void) const noexcept { return m_type; }
-	constexpr const position_t& position(void) const noexcept
+	type_t type(void) const noexcept { return type_t::eol; }
+
+	const position_t& position(void) const noexcept
 		{ return m_position; }
-	constexpr double float_value(void) const throw(std::system_error)
-		{
-			if (m_type != floating) throw std::system_error(
-				ENOTSUP, std::generic_category(),
-				"Requesed floating value for non-floating token");
-			return m_float;
-		}
-	constexpr sbucket_idx_t string_value(void) const throw(std::system_error)
-		{
-			if ((m_type != string) && (m_type != identifier))
-				throw std::system_error(
-					ENOTSUP, std::generic_category(),
-					"Requested string value for non-string or non-identifier token");
-			return m_string;
-		}
-	constexpr size_t value(void) const throw(std::system_error)
-		{
-			if ((m_type != eol) && (m_type != integer))
-				throw std::system_error(
-					ENOTSUP, std::generic_category(),
-					"Requested integer value for non-integer or non-eol token");
-			return m_value;
-		}
-	
-private:
-	type_t m_type;
-	position_t m_position;
 
-	union { // FIXME: Float should store precision (nr of digits)
-		double m_float;         // Only for type number_float
-		sbucket_idx_t m_string; // Only for type string & identifier
-		size_t m_value     ;    // Only given for type eol & integer
-	};
+	constexpr size_t indent_level(void) const noexcept
+		{ return m_indent_level; }
+
+private:
+	position_t m_position;
+	size_t m_indent_level;
+};
+
+class token_string_t : public token_t {
+public:
+	token_string_t(const position_t& pos, sbucket_idx_t str)
+		: m_position(pos), m_string(str) {}
+
+	type_t type(void) const noexcept { return type_t::string; }
+
+	const position_t& position(void) const noexcept
+		{ return m_position; }
+
+	constexpr sbucket_idx_t string(void) const noexcept
+		{ return m_string; }
+
+private:
+	position_t m_position;
+	sbucket_idx_t m_string;
+	
+};
+
+class token_identifier_t : public token_t {
+public:
+	token_identifier_t(const position_t& pos, sbucket_idx_t name)
+		: m_position(pos), m_name(name) {}
+
+	type_t type(void) const noexcept { return type_t::identifier; }
+
+	const position_t& position(void) const noexcept
+		{ return m_position; }
+
+	constexpr sbucket_idx_t name(void) const noexcept
+		{ return m_name; }
+
+private:
+	position_t m_position;
+	sbucket_idx_t m_name;
+	
+};
+
+class token_integer_t : public token_t {
+public:
+	typedef boost::multiprecision::number<boost::multiprecision::gmp_int> mp_int;
+	token_integer_t(const position_t& pos, const mp_int& value)
+		: m_position(pos), m_integer(value) {}
+
+	type_t type(void) const noexcept { return type_t::integer; }
+
+	const position_t& position(void) const noexcept
+		{ return m_position; }
+
+	constexpr const mp_int& value(void) const noexcept
+		{ return m_integer; }
+
+private:
+	position_t m_position;
+	mp_int m_integer;
+};
+
+class token_float_t : public token_t {
+public:
+	typedef boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<0> > mp_float;
+	token_float_t(const position_t& pos, const mp_float& floating)
+		: m_position(pos), m_float(floating) {}
+
+	type_t type(void) const noexcept { return type_t::floating; }
+
+	const position_t& position(void) const noexcept
+		{ return m_position; }
+
+	constexpr const mp_float& value(void) const noexcept
+		{ return m_float; }
+
+private:
+	position_t m_position;
+	mp_float m_float;
 };
 
 std::ostream& operator<<(std::ostream& os, const token_t& t);
-
-#define TOKEN_SEPARATORS         "\n\r\t "
-#define IDENTIFIER_INVALID_CHARS "\"()[]\{}'#" TOKEN_SEPARATORS
 
 class tokenizer_t {
 public:
 	tokenizer_t(environment_t& env, const char* file);
 
-	const token_t next(void);
+	bool next(std::unique_ptr<token_t>& token);
 
 private:
-	uint64_t get_number(char base, const char *valid_digits, size_t& nr_digits);
+	void get_number(token_integer_t::mp_int& nr, char base,
+			const char *valid_digits, size_t& nr_digits);
 
 	environment_t& m_env;
 	mmap_file_t m_file;
