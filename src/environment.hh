@@ -33,8 +33,8 @@ public:
 	environment_t() = default;
 	~environment_t() = default;
 
-	sbucket_t& sbucket() { return m_sbucket; }
-	const sbucket_t& sbucket() const { return m_sbucket; }
+	class sbucket& sbucket() { return m_sbucket; }
+	const class sbucket& sbucket() const { return m_sbucket; }
 
 	const size_t spaces_per_tab = 8;
 
@@ -47,7 +47,7 @@ public:
 	environment_t& operator=(const environment_t &) = delete;
 
 private:
-	sbucket_t m_sbucket;
+	class sbucket m_sbucket;
 };
 
 #endif // ENVIRONMENT_H

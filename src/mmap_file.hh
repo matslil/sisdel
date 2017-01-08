@@ -87,7 +87,7 @@ private:
 	environment_t& m_env;
 	mmap_t m_map;
 	position_t m_pos;
-	const sbucket_idx_t m_filename;
+	const string_idx_t m_filename;
 };
 
 

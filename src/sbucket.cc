@@ -31,65 +31,67 @@
  * Public function implementation
  */
 
-sbucket_t::sbucket_t()
-	: m_idx()
+sbucket::sbucket()
+	: m_entry()
 {
-	m_hash.fill(-1);
+	m_buckets.fill(-1);
 	tracepoint(tp_sisdel, tp_sbucket_init, this);
 }
 
-sbucket_t::~sbucket_t()
+sbucket::~sbucket()
 {
 	tracepoint(tp_sisdel, tp_sbucket_destroy, this);
 }
 
-sbucket_idx_t sbucket_t::find_add_hashed(const char *str,
+string_idx_t sbucket::find_add_hashed(const char *str,
 				    size_t str_len,
 				    hash_t hash)
 {
-	sbucket_idx_t idx = m_hash[hash % m_hash_entries];
-	
-	while (idx >= 0) {
-	  if ((m_idx[idx].str().compare(0, str_len, str) == 0)
-	      && (m_idx[idx].str().length() == str_len)) {
+	const size_t bucket_idx = hash % m_nr_buckets;
+	ssize_t idx;
+
+	for (idx = m_buckets[bucket_idx];
+	     idx >= 0;
+	     idx = m_entry[idx].m_next_idx) {
+		if ((m_entry[idx].m_str.compare(0, str_len, str, str_len) == 0)
+		    && (m_entry[idx].m_str.length() == str_len)) {
 			tracepoint(tp_sisdel, tp_sbucket_find, hash, str, str_len, idx);
 			return idx;
 		}
-		idx = m_idx[idx].hash_next();
 	}
 
 	/*
 	 * Not found, add.
 	 */
 
-	idx = m_idx.size();
+	// Assign a new string_idx_t for the new entry
+	const string_idx_t new_idx = m_entry.size();
 
 	{
-		idx_entry_t new_entry(str, str_len);
-		m_idx.push_back(std::move(new_entry));
+		idx_entry new_entry(new_idx, str, str_len);
+		m_entry.push_back(std::move(new_entry));
 	}
 
-	/* Update hash entry */
-	sbucket_idx_t hash_idx = m_hash[hash % m_hash_entries];
-
-	if (hash_idx < 0) {
-		/* First entry in hash array */
-		m_hash[hash % m_hash_entries] = idx;
-	} else {	
-		/* Move to end of hash chain */
-		while (m_idx[hash_idx].hash_next() >= 0)
-			hash_idx = m_idx[hash_idx].hash_next();
-
-		/* Add entry to hash chain */
-		m_idx[hash_idx].hash_next(idx);
+	if (m_buckets[bucket_idx] < 0)
+		// First entry in the bucket chain
+		m_buckets[bucket_idx] = new_idx;
+	else {
+		// Start from beginning in the bucket, and find that last
+		// entry in the chain
+		for (idx = m_buckets[bucket_idx];
+		     m_entry[idx].m_next_idx >= 0;
+		     idx = m_entry[idx].m_next_idx);
+		
+		// Link to previous chain in bucket chain
+		m_entry[idx].m_next_idx = new_idx;
 	}
+	
+	tracepoint(tp_sisdel, tp_sbucket_add, hash, str, str_len, new_idx);
 
-	tracepoint(tp_sisdel, tp_sbucket_add, hash, str, str_len, idx);
-
-	return idx;
+	return new_idx;
 }
 
-sbucket_idx_t sbucket_t::find_add(const char *str)
+string_idx_t sbucket::find_add(const char *str)
 {
 	hash_t hash = 0;
 	size_t str_len = 0;
@@ -105,8 +107,8 @@ sbucket_idx_t sbucket_t::find_add(const char *str)
 	return find_add_hashed(str, str_len, hash);
 }
 
-const char *sbucket_t::operator[](sbucket_idx_t idx) const {
-	const char * const str = m_idx[idx].str().c_str();
+const char *sbucket::operator[](string_idx_t idx) const {
+	const char * const str = m_entry[idx].m_str.c_str();
 	tracepoint(tp_sisdel, tp_sbucket_index, idx, str);
 	return str;
 }

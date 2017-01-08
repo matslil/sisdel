@@ -32,11 +32,11 @@ public:
 	namespace_t(std::shared_ptr<namespace_t> parent);
 	virtual ~namespace_t();
 
-	std::shared_ptr<value_t> operator[](sbucket_idx_t name);
+	std::shared_ptr<value_t> operator[](string_idx_t name);
 
 private:
 	std::shared_ptr<namespace_t> m_parent;
-	std::map<sbucket_idx_t, std::shared_ptr<value_t> > m_identifier;
+	std::map<string_idx_t, std::shared_ptr<value_t> > m_identifier;
 };
 
 #endif // NAMESPACE_H

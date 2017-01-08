@@ -54,9 +54,9 @@ struct Scope {
 };
 
 class scope_t {
-	scope_t(const sbucket_idx_t scope_name) : name(scope_name) {}
+	scope_t(const string_idx_t scope_name) : name(scope_name) {}
 
-	const sbucket_idx_t name;
+	const string_idx_t name;
 };
 
 class parser_scope_t : public scope_t {

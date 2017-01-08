@@ -70,7 +70,7 @@ private:
 
 class token_string_t : public token_t {
 public:
-	token_string_t(const position_t& pos, sbucket_idx_t str)
+	token_string_t(const position_t& pos, string_idx_t str)
 		: m_position(pos), m_string(str) {}
 
 	type_t type(void) const noexcept { return type_t::string; }
@@ -78,18 +78,18 @@ public:
 	const position_t& position(void) const noexcept
 		{ return m_position; }
 
-	constexpr sbucket_idx_t string(void) const noexcept
+	constexpr string_idx_t string(void) const noexcept
 		{ return m_string; }
 
 private:
 	position_t m_position;
-	sbucket_idx_t m_string;
+	string_idx_t m_string;
 	
 };
 
 class token_identifier_t : public token_t {
 public:
-	token_identifier_t(const position_t& pos, sbucket_idx_t name)
+	token_identifier_t(const position_t& pos, string_idx_t name)
 		: m_position(pos), m_name(name) {}
 
 	type_t type(void) const noexcept { return type_t::identifier; }
@@ -97,12 +97,12 @@ public:
 	const position_t& position(void) const noexcept
 		{ return m_position; }
 
-	constexpr sbucket_idx_t name(void) const noexcept
+	constexpr string_idx_t name(void) const noexcept
 		{ return m_name; }
 
 private:
 	position_t m_position;
-	sbucket_idx_t m_name;
+	string_idx_t m_name;
 	
 };
 

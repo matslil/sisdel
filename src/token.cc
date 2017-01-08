@@ -184,9 +184,9 @@ bool tokenizer_t::next(std::unique_ptr<token_t>& token)
 				get_number(decimals, base, valid_digits,
 					   nr_decimals);
 				token_float_t::mp_float d;
-				d.precision(((nr_digits + nr_decimals) * base) / 10);
 				d = (token_float_t::mp_float)decimals / pow((token_float_t::mp_float) base, (token_float_t::mp_float) nr_digits);
 				d += integer;
+				d.precision(((nr_digits + nr_decimals) * base) / 10);
 
 				// Ensure there's no trailing garbage
 				if (strchr(TOKEN_SEPARATORS, m_file.peek()) == NULL)
@@ -231,7 +231,7 @@ bool tokenizer_t::next(std::unique_ptr<token_t>& token)
 			const size_t size = m_file.skip_until_hashed('"', hash);
 
 			// Create a string index from the string
-			const sbucket_idx_t idx = m_env.sbucket().find_add_hashed(start_of_content, size, hash);
+			const string_idx_t idx = m_env.sbucket().find_add_hashed(start_of_content, size, hash);
 			
 			// Skip the matching '"'
 			m_file.skip();
@@ -286,7 +286,7 @@ bool tokenizer_t::next(std::unique_ptr<token_t>& token)
 				"Invalid identifier name");
 
 		// Create a string index from the identifier name
-		const sbucket_idx_t idx = m_env.sbucket().find_add_hashed(
+		const string_idx_t idx = m_env.sbucket().find_add_hashed(
 			start_of_content, size, hash);
 		
 		// Return identifier token

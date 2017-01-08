@@ -38,58 +38,56 @@
  * vice versa. Negative values are for reserved token names, such as
  * new-line, end-of-file, parenthesis, brackets, etc.
  */
-typedef ssize_t sbucket_idx_t;
+typedef size_t string_idx_t;
 
-class sbucket_t {
+class sbucket {
 public:
 	// Constructor
-	sbucket_t();
+	sbucket();
 
 	// Destructor
-	~sbucket_t();
+	~sbucket();
 
-	sbucket_idx_t find_add_hashed(const char *str,
+	string_idx_t find_add_hashed(const char *str,
 				      size_t str_len,
 				      hash_t hash);
-	sbucket_idx_t find_add(const char *str);
+	string_idx_t find_add(const char *str);
 
-	const char *operator[](sbucket_idx_t idx) const;
+	const char *operator[](string_idx_t idx) const;
 
 	// Defaults
-	sbucket_t(const sbucket_t &other) = default;
-	sbucket_t(sbucket_t &&tmp) = default;
-	sbucket_t& operator=(const sbucket_t &other) = default;
-	sbucket_t& operator=(sbucket_t &&tmp) = default;
+	sbucket(const sbucket &other) = default;
+	sbucket(sbucket &&tmp) = default;
+	sbucket& operator=(const sbucket &other) = default;
+	sbucket& operator=(sbucket &&tmp) = default;
 
 private:
-	class idx_entry_t {
+	class idx_entry {
 	public:
-		idx_entry_t(const char *str, size_t str_len)
-			: m_hash_next(-1), m_str(str, str_len) {}
-		idx_entry_t& hash_next(sbucket_idx_t idx) { assert(m_hash_next == -1); m_hash_next = idx; return *this; }
-		sbucket_idx_t hash_next() const { return m_hash_next; }
-		const std::string& str() const { return m_str; }
+		idx_entry(string_idx_t idx, const char *str, size_t str_len)
+			: m_idx(idx), m_next_idx(-1), m_str(str, str_len)
+			{}
 
-		// Defaults
-		idx_entry_t(idx_entry_t &other) = delete;
-		idx_entry_t(idx_entry_t &&tmp) 
-			: m_hash_next(tmp.m_hash_next), m_str(std::move(tmp.m_str)) {}
-		idx_entry_t& operator=(idx_entry_t &other) = delete;
-		idx_entry_t& operator=(idx_entry_t &&tmp) {
-			m_hash_next = tmp.m_hash_next;
-			m_str = std::move(tmp.m_str);
-			return *this;
-		}
+		// Index of this entry
+		const string_idx_t m_idx;
 
-	private:
-		sbucket_idx_t m_hash_next;
-		std::string m_str;
+		// Index to next entry if >= 0, or end of chain if < 0
+		ssize_t m_next_idx;
+
+		// The string
+		const std::string m_str;
 	};
 
-	static const size_t m_hash_entries = 4096;
+	// Number of buckets. Needs to be a power of two.
+	static const size_t m_nr_buckets = 4096;
 
-	std::array<sbucket_idx_t, m_hash_entries> m_hash;
-	std::vector<idx_entry_t> m_idx;
+	// The last bits of the hash code translates into a bucket.
+	// A bucket is a linked lists of strings sharing that last bit
+	// of the hash code.
+	std::array<ssize_t, m_nr_buckets> m_buckets;
+
+	// Translate string_idx_t -> m_hash index
+	std::vector<idx_entry> m_entry;
 };
 
 #endif /* SBUCKET_H */
