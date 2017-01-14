@@ -33,19 +33,30 @@ along with GCC; see the file COPYING.  If not see
 #include <boost/multiprecision/mpfr.hpp>
 #include <boost/multiprecision/gmp.hpp>
 
+typedef boost::multiprecision::number<boost::multiprecision::gmp_int> mp_int;
+typedef boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<0> > mp_float;
+
+class token_t;
+
+class tokenizer_t {
+public:
+
+	tokenizer_t(environment_t& env, const char* file);
+
+	const token_t* next(void);
+
+private:
+	void get_number(mp_int& nr, char base,
+			const char *valid_digits, size_t& nr_digits);
+
+	environment_t& m_env;
+	mmap_file_t m_file;
+	position_t m_startofline;
+};
+
 class token_t {
 public:
-	typedef enum {
-		eol,
-		string,
-		identifier,
-		floating,
-		integer
-	} type_t;
-
-	virtual ~token_t() {};
-
-	virtual type_t type(void) const noexcept = 0;
+	virtual ~token_t() noexcept {};
 
 	virtual const position_t& position(void) const noexcept = 0;
 };
@@ -54,8 +65,6 @@ class token_eol_t : public token_t {
 public:
 	token_eol_t(const position_t& pos, size_t indent_level)
 		: m_position(pos), m_indent_level(indent_level) {}
-
-	type_t type(void) const noexcept { return type_t::eol; }
 
 	const position_t& position(void) const noexcept
 		{ return m_position; }
@@ -73,8 +82,6 @@ public:
 	token_string_t(const position_t& pos, string_idx_t str)
 		: m_position(pos), m_string(str) {}
 
-	type_t type(void) const noexcept { return type_t::string; }
-
 	const position_t& position(void) const noexcept
 		{ return m_position; }
 
@@ -84,15 +91,12 @@ public:
 private:
 	position_t m_position;
 	string_idx_t m_string;
-	
 };
 
 class token_identifier_t : public token_t {
 public:
 	token_identifier_t(const position_t& pos, string_idx_t name)
 		: m_position(pos), m_name(name) {}
-
-	type_t type(void) const noexcept { return type_t::identifier; }
 
 	const position_t& position(void) const noexcept
 		{ return m_position; }
@@ -103,16 +107,12 @@ public:
 private:
 	position_t m_position;
 	string_idx_t m_name;
-	
 };
 
 class token_integer_t : public token_t {
 public:
-	typedef boost::multiprecision::number<boost::multiprecision::gmp_int> mp_int;
 	token_integer_t(const position_t& pos, const mp_int& value)
 		: m_position(pos), m_integer(value) {}
-
-	type_t type(void) const noexcept { return type_t::integer; }
 
 	const position_t& position(void) const noexcept
 		{ return m_position; }
@@ -127,11 +127,8 @@ private:
 
 class token_float_t : public token_t {
 public:
-	typedef boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<0> > mp_float;
 	token_float_t(const position_t& pos, const mp_float& floating)
 		: m_position(pos), m_float(floating) {}
-
-	type_t type(void) const noexcept { return type_t::floating; }
 
 	const position_t& position(void) const noexcept
 		{ return m_position; }
@@ -145,20 +142,5 @@ private:
 };
 
 std::ostream& operator<<(std::ostream& os, const token_t& t);
-
-class tokenizer_t {
-public:
-	tokenizer_t(environment_t& env, const char* file);
-
-	bool next(std::unique_ptr<token_t>& token);
-
-private:
-	void get_number(token_integer_t::mp_int& nr, char base,
-			const char *valid_digits, size_t& nr_digits);
-
-	environment_t& m_env;
-	mmap_file_t m_file;
-	position_t m_startofline;
-};
 
 #endif /* TOKEN_H */

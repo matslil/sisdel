@@ -28,6 +28,7 @@ along with GCC; see the file COPYING.  If not see
 #include <cmath>
 #include <ostream>
 #include <string.h>
+#include <boost/core/demangle.hpp>
 
 #include "token.hh"
 #include "hash.hh"
@@ -40,12 +41,12 @@ along with GCC; see the file COPYING.  If not see
 
 #ifndef NDEBUG
 
-long long value_of_int(token_integer_t::mp_int value)
+long long value_of_int(mp_int value)
 {
 	return (long long)value;
 }
 
-long double value_of_float(token_float_t::mp_float value)
+long double value_of_float(mp_float value)
 {
 	return (long double)value;
 }
@@ -67,7 +68,7 @@ static bool valid_digit(char ch, char base)
 		return (ch >= '0') && (ch <= ('0' + base - 1));
 }
 
-void tokenizer_t::get_number(token_integer_t::mp_int& nr, char base,
+void tokenizer_t::get_number(mp_int& nr, char base,
 			     const char *valid_digits, size_t& nr_digits)
 {
 	char ch;
@@ -96,7 +97,7 @@ void tokenizer_t::get_number(token_integer_t::mp_int& nr, char base,
 	}
 }
 
-bool tokenizer_t::next(std::unique_ptr<token_t>& token)
+const token_t* tokenizer_t::next(void)
 {
 	for (;;) {
 		if (m_file.eof())
@@ -136,8 +137,7 @@ bool tokenizer_t::next(std::unique_ptr<token_t>& token)
 			}
 
 			// Return new-line token
-			token.reset(new token_eol_t(m_startofline, nr_tabs));
-			return true;
+			return new token_eol_t(m_startofline, nr_tabs);
 		}
 
 		if (valid_digit(ch, 10)) {
@@ -174,17 +174,17 @@ bool tokenizer_t::next(std::unique_ptr<token_t>& token)
 			}
 
 			size_t nr_digits;
-			token_integer_t::mp_int integer(0);
+			mp_int integer(0);
 			get_number(integer, base, valid_digits, nr_digits);
 
 			if (m_file.peek() == '.') {
 				size_t nr_decimals;
 				m_file.skip();
-				token_integer_t::mp_int decimals(0);
+				mp_int decimals(0);
 				get_number(decimals, base, valid_digits,
 					   nr_decimals);
-				token_float_t::mp_float d;
-				d = (token_float_t::mp_float)decimals / pow((token_float_t::mp_float) base, (token_float_t::mp_float) nr_digits);
+				mp_float d;
+				d = (mp_float)decimals / pow((mp_float) base, (mp_float) nr_digits);
 				d += integer;
 				d.precision(((nr_digits + nr_decimals) * base) / 10);
 
@@ -196,9 +196,8 @@ bool tokenizer_t::next(std::unique_ptr<token_t>& token)
 						"Trailing garbage after float constant");
 
 				// Return floating token
-				token.reset(new token_float_t(
-						    start_of_number, d));
-				return true;
+				return new token_float_t(
+						start_of_number, d);
 			}
 				
 			// Ensure there's no trailing garbage
@@ -210,9 +209,8 @@ bool tokenizer_t::next(std::unique_ptr<token_t>& token)
 
 
 			// Return integer token
-			token.reset(new token_integer_t(
-					    start_of_number, integer));
-			return true;
+			return new token_integer_t(
+					start_of_number, integer);
 		}
 
 		if (ch == '"') {
@@ -244,8 +242,7 @@ bool tokenizer_t::next(std::unique_ptr<token_t>& token)
 					"Trailing garbage after string constant");
 
 			// Return string token
-			token.reset(new token_string_t(string_start, idx));
-			return true;
+			return new token_string_t(string_start, idx);
 		}
 
 		// If a comment, skip the rest of the line
@@ -290,47 +287,33 @@ bool tokenizer_t::next(std::unique_ptr<token_t>& token)
 			start_of_content, size, hash);
 		
 		// Return identifier token
-		token.reset(new token_identifier_t(identifier_start, idx));
-		return true;
+		return new token_identifier_t(identifier_start, idx);
 	}
 
 	// No more input
-	return false;
+	return NULL;
 }
 
 std::ostream& operator<<(std::ostream& os, const token_t& t)
 {
-	switch (t.type()) {
-	case token_t::eol:
-		os << "eol(indent: "
-		   << dynamic_cast<const token_eol_t&>(t).indent_level()
-		   << ')';
-		break;
-	case token_t::integer:
-		os << "integer("
-		   << dynamic_cast<const token_integer_t&>(t).value()
-		   << ')';
-		break;
-	case token_t::floating:
-	{
+	const std::type_info& ti = typeid(t);
+	os << boost::core::demangle(ti.name()) << '(';
+	if (ti == typeid(token_eol_t)) {
+		os << "indent: "
+		   << dynamic_cast<const token_eol_t&>(t).indent_level();
+	} else if (ti == typeid(token_integer_t)) {
+		os << dynamic_cast<const token_integer_t&>(t).value();
+	} else if (ti == typeid(token_float_t)) {
 		const token_float_t& tf(dynamic_cast<const token_float_t&>(t));
 		os.precision(tf.value().precision());
-		os << "float(" << tf.value() << ':' << tf.value().precision()
-		   << ')';
-		break;
-	}
-	case token_t::string:
-		os << "string(idx: "
-		   << dynamic_cast<const token_string_t&>(t).string() << ')';
-		break;
-	case token_t::identifier:
-		os << "string(idx: "
-		   << dynamic_cast<const token_identifier_t&>(t).name() << ')';
-		break;
-	default:
-		os << "unknown()";
-		break;
+		os << tf.value() << ':' << tf.value().precision();
+	} else if (ti == typeid(token_string_t)) {
+		os << dynamic_cast<const token_string_t&>(t).string();
+	} else if (ti == typeid(token_identifier_t)) {
+		os << dynamic_cast<const token_identifier_t&>(t).name();
 	}
 
+	os << ')';
+	
 	return os;
 }
