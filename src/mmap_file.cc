@@ -1,24 +1,22 @@
 /*
+  Implementation of the mmap_file_t class.
 
-Memory mapped file for token parser.
+  Copyright (C) 2013-2017 Mats G. Liljegren
+  SPDX-License-Identifier: Apache-2.0
 
-Copyright (C) 2013 Mats G. Liljegren
+  This file is part of Sisdel.
 
-This file is part of Sisdel.
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy
+  of the License at
 
-Sisdel is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free
-Software Foundation, version 3.
+  http://www.apache.org/licenses/LICENSE-2.0
 
-Sisdel is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-for more details.
-
-You should have received a copy of the GNU General Public License
-along with GCC; see the file COPYING.  If not see
-<http://www.gnu.org/licenses/>.
-
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  License for the specific language governing permissions and limitations
+  under the License.
 */
 
 #include <system_error>
@@ -178,4 +176,10 @@ const position_t mmap_file_t::get_position(void) const noexcept
 	std::string line(m_start, strsz(m_start, '\n', m_end));
 	position_t position(line, this, m_line, m_col);
 	return position;
+}
+
+std::string mmap_file_t::marker_end(void)
+{
+	std::string str(m_marker_start, m_buff - m_marker_start);
+	return str;
 }

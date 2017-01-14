@@ -149,15 +149,15 @@ pdf: sisdel.pdf
 # sisdel.pdf:  %.pdf : %.tex
 
 # sisdel.pdf build, release version
-sisdel.pdf: %.pdf: %.md %.css sisdel.md type-hierarchy-graph.pdf type-relation-graph.pdf default.latex
+sisdel.pdf: %.pdf: %.md %.css sisdel.md type-hierarchy-graph.pdf type-relation-graph.pdf default.latex CC-BY-license-88x31.png
 	pandoc --toc -c $*.css --default-image-extension=$(suffix $@) --data-dir=$(<D) -o $@ $<
 
 
 # How to build the document file, same template regardless of output format
-sisdel.tex: %.tex: %.md %.css sisdel.md type-hierarchy-graph.pdf type-relation-graph.pdf default.latex
+sisdel.tex: %.tex: %.md %.css sisdel.md type-hierarchy-graph.pdf type-relation-graph.pdf default.latex CC-BY-license-88x31.png
 	pandoc --toc -c $*.css --default-image-extension=pdf --data-dir=$(<D) -o $@ $<
 
-sisdel.html: %.html: %.md %.css sisdel.md type-hierarchy-graph.svg type-relation-graph.svg
+sisdel.html: %.html: %.md %.css sisdel.md type-hierarchy-graph.svg type-relation-graph.svg CC-BY-license-88x31.png
 	pandoc --toc -c $*.css --default-image-extension=$(suffix $@) --data-dir=$(<D) -o $@ $<
 
 # Convert LaTex to pdf
@@ -173,6 +173,9 @@ sisdel.html: %.html: %.md %.css sisdel.md type-hierarchy-graph.svg type-relation
 # Compile directional graph text file to svg
 %.svg: %.dot
 	dot -Tsvg $< > $@
+
+CC-BY-license-88x31.png: $(SRCPATH)/CC-BY-license-88x31.png
+	ln -s $<
 
 # Run unit test
 test: Makefile $(UNIT_TESTS)

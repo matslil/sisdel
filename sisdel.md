@@ -1,6 +1,18 @@
 % Simple Syntax Dependency Language (Sisdel)
 % Mats Liljegren
 
+License
+=======
+
+![CC-BY-4.0](CC-BY-license-88x31.png "Creative Commons 4.0 International License")
+SPDX-License-Identifier: CC-BY-4.0
+
+This work is licensed under a Creative Commons Attribution 4.0 International
+License. See <http://creativecommons.org/licenses/by/4.0/> for license text.
+
+Introduction
+============
+
 Sisdel is an experimental language intended to address modern
 programming language challenges. Current trend within programming is:
 
@@ -300,47 +312,58 @@ needed to fulfill the protocol being used when copying. Only the owner
 can change owner and access rights. Trust is determined by the user
 referring to the information and is not part of a copy.
 
-Tracking trust
---------------
+Types of namespaces
+-------------------
 
-Trust is a wrapping entity and not really a part of the
-information. When the information is copied trust is not part of the
-copy.
+Namespaces come in pairs, one that has no name in the code but is
+referred to as "value" namespace and one that is referred to as
+"meta" namespace.
 
-Each user has a database of what user they assign what trust to. Any
-information from those users are assigned this trust level. Parts of
-the application can then apply a trust constriction, i.e. require that
-some information must have some level of trust to be accepted.
+Both namespaces behave the same. When a new object is created within
+a namespace, corresponding meta namespace will be affected the same
+way.
 
-Tracking dependencies
----------------------
+Once an identifier name has been declared in a namespace it cannot
+be altered. However, when importing other namespaces it is possible
+to give the imported namespace a new name.
 
+Since the root namespace is what you always start with, whatever
+happens to be declared there cannot be overridden. In Sisdel the
+following objects are declared in value namespace:
 
+* thread
 
-Tracking interpretation
------------------------
+And for meta namespace:
 
-Tracking storage format
------------------------
+* type
 
+Types
+-----
 
-The following types are the primary types for Sisdel:
+The following types are define for Sisdel:
 
-* Set
+* Thing
+* Enum
 * Map
 * Type
 * Value
 * String
 * Constraint
+* Thread
+* Stream
 
 ![Hierarchy](type-hierarchy-graph "Sisdel type hierarchy")
 
 ![Relations](type-relation-graph "Sisdel type relations")
 
-### Set
-This is the simplest container. It contains a collection of items,
-which by default are unordered. A constraint could be applied to a
-set to make it sorted.
+### Thing
+This is the root type from which all other types inherits. The usage
+of this type implies that the type is insignificant.
+
+### Enum
+Presents a list of possible values, which are mutually exclusive. An
+identifier of type enum can only have one of those values, or being
+unassigned.
 
 ### Map
 The map associates a key with a value. By default both keys and values
@@ -352,25 +375,45 @@ integer and disallow duplicates.
 A sorted map will sort on key type, key value, data type and data value,
 in that order.
 
-Map inherits from set.
-
-### Type
-Type determines what is compatible, and consists of:
-- The class
-- The unit
-- The constraint
+If key is of type "Data" and has value unassigned then the map becomes a
+set.
 
 ### Value
 Value can be a floating point value or an unsigned or signed integer
 value. By default, the values are unbounded.
 
 ### Constraint
+The constraint is a condition that apply for an object defining what value
+and/or meta-value this object is allowed to have.
+
+
+
+Constraints limits how data can be used and what data that is compatible.
+Constraints can be of the following types:
+ -  Type, specifies what the valid type or types are
+ -  Unit, specifies a name for compatibility use
+ -  Value, specifies valid values
+
+A type constraint is given by the operator "type", which is followed
+by a list of valid types.
+
+A unit constraint is given by the operator "unit", which is followed
+by a list of valid units.
+
+A value constraint is given by an expression, that must evaluate to
+true. A range for example is given by expression "
+
 Constraints can be put on anything to describe limitations of its
 use. These limitations are typically not intended to describe what can
 or cannot be done, but rather what is allowed. Constraints describe
 security, privacy and optimization concerns.
 
-Constraints can be given in two ways: Using "allow", "deny" and
+Constraints are built from type, unit and generic expressions. Every
+piece of data has a type, but it can be constrained into a more specific
+sub-type. Unit has as its only purpose to give the data a scope, and is
+only compatible with other data defined for the same unit scope.
+
+Generic expressions can be given in two ways: Using "allow", "deny" and
 require, or using "when". This gives slightly different
 results. "allow" and "deny" will put restrictions on the use of the
 associated data, while "when" will put restrictions on when the
@@ -891,99 +934,6 @@ Regarding comments: These are seen as part of application
 documentation, and are therefore defined using the object "#", hash
 character. In cases where the documentation is not supposed to be
 exported, the tripple hash can be used, i.e. "###".
-
-### Scanner syntax in extended Backus-Naur format:
-    (* All names below ending with “-token” are entities returned by
-       the scanner *)
-    program = { { '\n' } , token } ;
-	token =
-        number-token
-	  | string-token
-	  | argname-token
-	  | indent-token
-	  | documentation-token
-	  | comment-token
-	  | char-token
-	  | unit-token ;
-    indent-token = '\t' , { '\t' } ;
-    newln = '\n' | '\r' ;
-    comment-token = '#' , { ? any-char ? } , newln ;
-    documentation-token = '###' , { ? any-char ? } , newln ;
-    number-token = [ '-' ] , ( dec-real )
-	    | ( '0x' , hex-real )
-	    | ( '0o' , oct-real )
-	    | ( '0b' , bin-real ) ;
-    bin-real = bin-unsigned , [ '.' , bin-unsigned ] , [ 'e' , [ '-' ]
-        , bin-unsigned ] ;
-    oct-real = oct-unsigned , [ '.' , oct-unsigned ] , [ 'e' , [ '-' ]
-        , oct-unsigned ] ;
-	dec-real = dec-unsigned , [ '.' , dec-unsigned ] , [ 'e' , [ '-' ]
-        , dec-unsigned ] ;
-    hex-real = hex-unsigned , [ '.' , hex-unsigned ] , [ 'e' , [ '-' ]
-        , hex-unsigned ] ;
-    dec-unsigned = dec-digit , { dec-digit } ;
-    hex-unsigned = hex-digit , { hex-digit} ;
-    oct-unsigned = oct-digit , { oct-digit } ;
-    bin-unsigned = bin-digit , { bin-digit } ;
-    bin-digit = '0' | '1' ;
-    oct-digit = bin-digit | '2' | '3' | '4' | '5' | '6' | '7' ;
-    dec-digit = oct-digit | '8' | '9' | ' ;
-    hex-digit = dec-digit | 'a' | 'b' | 'c' | 'e' | 'f'  ;
-    string-token = ( '”' , { valid-consecutive-char } , '”' ) 
-        | ( valid-first-char , { valid-consecutive-char } ) ;
-    valid-first-char = ? printable chars except ”
-	    - 0 1 2 3 4 5 6 7 8 9 : \t \n ? ;
-    valid-consecutive-char =
-	    valid-first-char | ? - 0 1 2 3 4 5 6 7 8 9 ? ;
-
-### Parser syntax:
-    (* All names below ending with “-token” comes from the scanner *)
-    program = { expression }
-	expression = [ expression ? scope ? ] ,
-            number-token
-		| string-token
-		| comment-token
-		| documentation-token
-		| operator-call
-		| unit-token
-		| '(' , { expression } , ')'
-		| expression , indented-expression
-		| set ;
-    indented-expression =
-	    indent , expression , { same-indent , expression } ;
-    operator-call = operator-name , [ expression ] ;
-    operator-name = string-token ;
-    set = expression , ',' , expression , { ',' , expression } ;
-
-### Example, hello world:
-    use sisdel-v1
-	stdout println "Hello world!"
-
-### Example, calculate sum of arguments:
-    use sisdel-v1
-	stdout println "Sum: " , sum arg
-	operator sum is
-	    arg foreach val do ( retval add val )
-
-### Example, same as above but make sure sum only accepts unsigned integers
-    use sisdel-v1
-	stdout println "Sum: " , sum arg
-	operator sum is
-	    arg is unsigned
-	    arg foreach val do ( retval add val )
-
-### Example, multiple parameters to operator:
-    use sisdel-v1
-	stdout println "Result: " , repeat-string "hej " nr-times: 2
-	operator repeat-string is
-	    repeat nr-times do ( retval add arg )
-
-### Example, make sum single-threaded
-    use sisdel-v1
-        stdout println "Result: " , sum 1 , 2 , 3 , 4, 5
-        operator sum is
-	    arg foreach val do ( retval add val )
-        message sum is queue-len-max 1
 
 Type inference
 --------------

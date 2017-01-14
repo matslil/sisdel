@@ -1,24 +1,22 @@
 /*
+  Implements the scanner (tokenizier_t).
 
-Parser.
+  Copyright (C) 2013-2017 Mats G. Liljegren
+  SPDX-License-Identifier: Apache-2.0
 
-Copyright (C) 2013-2017 Mats G. Liljegren
+  This file is part of Sisdel.
 
-This file is part of Sisdel.
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy
+  of the License at
 
-Sisdel is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free
-Software Foundation, version 3.
+  http://www.apache.org/licenses/LICENSE-2.0
 
-Sisdel is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-for more details.
-
-You should have received a copy of the GNU General Public License
-along with GCC; see the file COPYING.  If not see
-<http://www.gnu.org/licenses/>.
-
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  License for the specific language governing permissions and limitations
+  under the License.
 */
 
 //////////////////////////////////////////////////////////////////////////////
@@ -114,9 +112,6 @@ const token_t* tokenizer_t::next(void)
 			// Handle multiple new-lines
 			(void) m_file.skip("\r\n");
 
-			// Remember line start for diagnostic messages
-			m_startofline = m_file.get_position();
-
 			// Determine indentation level, which is number of
 			// tab characters
 			const size_t nr_tabs = m_file.skip('\t');
@@ -137,7 +132,7 @@ const token_t* tokenizer_t::next(void)
 			}
 
 			// Return new-line token
-			return new token_eol_t(m_startofline, nr_tabs);
+			return new token_eol_t(m_file.get_position(), nr_tabs);
 		}
 
 		if (valid_digit(ch, 10)) {
@@ -222,14 +217,15 @@ const token_t* tokenizer_t::next(void)
 			// Skip past current '"'
 			m_file.skip();
 
-			const char * const start_of_content = m_file.str();
+			// Remember start of string
+			m_file.marker_start();
 			
 			// Skip until matching '"'
 			hash_t hash;
-			const size_t size = m_file.skip_until_hashed('"', hash);
+			m_file.skip_until_hashed('"', hash);
 
 			// Create a string index from the string
-			const string_idx_t idx = m_env.sbucket().find_add_hashed(start_of_content, size, hash);
+			const string_idx_t idx = m_env.sbucket().find_add_hashed(m_file.marker_end(), hash);
 			
 			// Skip the matching '"'
 			m_file.skip();
@@ -258,7 +254,7 @@ const token_t* tokenizer_t::next(void)
 		
 		// Anything else becomes a name of an identifier
 		const position_t identifier_start = m_file.get_position();
-		const char * const start_of_content = m_file.str();
+		m_file.marker_start();
 		
 		// Skip until invalid character or token separator
 		hash_t hash;
@@ -284,7 +280,7 @@ const token_t* tokenizer_t::next(void)
 
 		// Create a string index from the identifier name
 		const string_idx_t idx = m_env.sbucket().find_add_hashed(
-			start_of_content, size, hash);
+			m_file.marker_end(), hash);
 		
 		// Return identifier token
 		return new token_identifier_t(identifier_start, idx);
