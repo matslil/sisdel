@@ -34,31 +34,33 @@ class mmap_file_t;
 
 class position_t {
 public:
-	position_t(const char *buff, const char *start, const char *end,
-		   mmap_file_t* file, size_t line = 1, size_t col = 1)
-		: m_buff(buff), m_start(start), m_end(end), m_file(file),
-		  m_line(line), m_col(col) {}
+	position_t(std::string& str, const mmap_file_t * file,
+		   size_t line, size_t col)
+		: m_str(str), m_file(file), m_line(line), m_col(col) {}
 
-	constexpr bool operator==(const position_t& rhs)
-		const noexcept
+	bool operator==(const position_t& rhs) const noexcept
 		{
-			return (m_buff == rhs.m_buff) &&
-				(m_start == rhs.m_start) &&
-				(m_end == rhs.m_end) &&
+			return (m_str == rhs.m_str) &&
 				(m_file == rhs.m_file) &&
 				(m_line == rhs.m_line) &&
 				(m_col == rhs.m_col);
 		}
 
-	// Returns first line of code being pointed at by this position
-	std::string buffln(void) const;
+	// Return line of code
+	const std::string& str(void) const { return m_str; }
+
+	constexpr size_t column(void) const noexcept
+		{ return m_col; }
+	constexpr size_t line(void) const noexcept
+		{ return m_line; }
+	constexpr const mmap_file_t& file(void) const noexcept
+		{ return *m_file; }
 	
-	const char * m_buff;
-	const char * m_start;
-	const char * m_end;
-	mmap_file_t* m_file;
-	size_t m_line;
-	size_t m_col;
+private:
+	const std::string m_str;
+	const mmap_file_t * const m_file;
+	const size_t m_line;
+	const size_t m_col;
 };
 
 // Return the position as a string using following format:

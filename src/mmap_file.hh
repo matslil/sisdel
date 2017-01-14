@@ -30,6 +30,8 @@ along with Sisdel; see the file COPYING.  If not see
 #include "error.hh"
 #include "position.hh"
 
+class position_t;
+
 class mmap_file_t {
 public:
 	mmap_file_t(environment_t &env, const char *name);
@@ -38,11 +40,11 @@ public:
 
 	constexpr size_t buf_size() const noexcept { return m_map.file_size(); }
 
-	constexpr const char *str() const noexcept { return m_pos.m_buff; }
+//	constexpr const char *str() const noexcept { return m_pos.m_buff; }
 	constexpr char peek(void) const noexcept
-		{ return eof() ? '\0' : *m_pos.m_buff; }
+		{ return eof() ? '\0' : *m_buff; }
 	constexpr bool eof(void) const noexcept
-		{ return m_pos.m_buff >= m_pos.m_end; }
+		{ return m_buff >= m_end; }
 	size_t skip(char skip_ch);
 	size_t skip(const char *skip_str);
 	void skip_until(char until_ch);
@@ -50,9 +52,7 @@ public:
 	size_t skip_until_hashed(const char* until_str, hash_t& hash);
 	void skip(void);
 
-	constexpr const position_t& get_position(void) const noexcept
-		{ return m_pos;}
-	void set_position(const position_t& pos) noexcept { m_pos = pos; }
+	const position_t get_position(void) const noexcept;
 
 	constexpr const char * filename(void) const
 		{ return m_env.sbucket()[m_filename]; }
@@ -86,7 +86,11 @@ private:
 
 	environment_t& m_env;
 	mmap_t m_map;
-	position_t m_pos;
+	const char * m_buff;
+	const char * m_start;
+	const char * const m_end;
+	size_t m_col;
+	size_t m_line;
 	const string_idx_t m_filename;
 };
 

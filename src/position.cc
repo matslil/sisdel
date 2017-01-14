@@ -26,6 +26,7 @@ along with Sisdel; see the file COPYING.  If not see
 #include <sstream>
 #include <string.h>
 
+#if 0
 size_t strsz(const char * str, char find, const char * end)
 {
 	size_t idx = 0;
@@ -45,8 +46,10 @@ std::string position_t::buffln(void) const
 	return str;
 }
 
+#endif
+
 std::ostream& operator<<(std::ostream& os, const position_t& m)
 { 
-	os << m.m_file->filename() << ':' << m.m_line << ':' << m.m_col;
+	os << m.file().filename() << ':' << m.line() << ':' << m.column();
 	return os;
 }

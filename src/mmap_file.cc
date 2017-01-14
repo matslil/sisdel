@@ -29,6 +29,7 @@ along with GCC; see the file COPYING.  If not see
 #include <string.h>
 
 #include "mmap_file.hh"
+#include "position.hh"
 #include "file.hh"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,9 +64,8 @@ mmap_file_t::mmap_t::~mmap_t()
 ///////////////////////////////////////////////////////////////////////////////
 
 mmap_file_t::mmap_file_t(environment_t &env, const char * name)
-	: m_env(env), m_map(name),
-	  m_pos(m_map.map(), m_map.map(), m_map.map() + m_map.file_size(),
-		this),
+	: m_env(env), m_map(name), m_buff(m_map.map()), m_start(m_buff),
+	  m_end(m_buff + m_map.file_size()), m_col(1), m_line(1),
 	  m_filename(m_env.sbucket().find_add(name))
 {}
 
@@ -73,7 +73,7 @@ size_t mmap_file_t::skip(char skip_ch)
 {
 	size_t count = 0;
 
-	while (!eof() && (*m_pos.m_buff == skip_ch)) {
+	while (!eof() && (*m_buff == skip_ch)) {
 		skip();
 		count++;
 	}
@@ -85,7 +85,7 @@ size_t mmap_file_t::skip(const char *skip_str)
 {
 	size_t count = 0;
 
-	while (!eof() && (strchr(skip_str, *m_pos.m_buff) != NULL)) {
+	while (!eof() && (strchr(skip_str, *m_buff) != NULL)) {
 		skip();
 		count++;
 	}
@@ -97,7 +97,7 @@ void mmap_file_t::skip_until(char until_ch)
 {
 	if (eof())
 		throw std::system_error(EINVAL, std::generic_category(), "Failed finding character");
-	while (*m_pos.m_buff != until_ch) {
+	while (*m_buff != until_ch) {
 		skip();
 		if (eof())
 			throw std::system_error(EINVAL, std::generic_category(), "Failed finding character");
@@ -110,8 +110,8 @@ size_t mmap_file_t::skip_until_hashed(char until_ch, hash_t& hash)
 	hash = 0;
 	if (eof())
 		throw std::system_error(EINVAL, std::generic_category(), "Failed finding character");
-	while (*m_pos.m_buff != until_ch) {
-		hash = hash_next(*m_pos.m_buff, hash);
+	while (*m_buff != until_ch) {
+		hash = hash_next(*m_buff, hash);
 		count++;
 		skip();
 		if (eof())
@@ -129,8 +129,8 @@ size_t mmap_file_t::skip_until_hashed(const char* until_str, hash_t& hash)
 	hash = 0;
 	if (eof())
 		throw std::system_error(EINVAL, std::generic_category(), "Failed finding character");
-	while (strchr(until_str, *m_pos.m_buff) == NULL) {
-		hash = hash_next(*m_pos.m_buff, hash);
+	while (strchr(until_str, *m_buff) == NULL) {
+		hash = hash_next(*m_buff, hash);
 		count++;
 		skip();
 		if (eof())
@@ -148,14 +148,34 @@ void mmap_file_t::skip(void)
 {
 	if (eof())
 		throw std::system_error(EPIPE, std::generic_category(), "mmap_file_t::skip");
-	if ((*m_pos.m_buff) == '\n') {
-		m_pos.m_line++;
-		m_pos.m_col = 1;
-		m_pos.m_start = m_pos.m_buff + 1;
-	} else if ((*m_pos.m_buff) == '\t') {
-		m_pos.m_col += m_env.spaces_per_tab;
+	if ((*m_buff) == '\n') {
+		m_line++;
+		m_col = 1;
+		m_start = m_buff + 1;
+	} else if ((*m_buff) == '\t') {
+		m_col += m_env.spaces_per_tab;
 	} else {
-		m_pos.m_col++;
+		m_col++;
 	}
-	m_pos.m_buff++;
+	m_buff++;
+}
+
+size_t strsz(const char * str, char find, const char * end)
+{
+	size_t idx = 0;
+	
+	while (str != end) {
+		if (str[idx] == find)
+			return idx;
+		idx++;
+	}
+
+	return idx;
+}
+
+const position_t mmap_file_t::get_position(void) const noexcept
+{
+	std::string line(m_start, strsz(m_start, '\n', m_end));
+	position_t position(line, this, m_line, m_col);
+	return position;
 }
