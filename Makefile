@@ -58,7 +58,7 @@ vpath default.latex $(SRCPATH)/templates
 
 # Needed when building unit tests
 vpath %.cc $(SRCPATH)/unit-test   # Sisdel unit tests
-vpath %.cc $(CURDIR)/googletest/googletest/src # Google test framework
+vpath %.cc $(SRCPATH)/submodules/googletest/googletest/src # Google test framework
 
 OPTIMIZE_LEVEL := 0
 
@@ -72,8 +72,8 @@ CFLAGS_COMMON += -pthread
 CFLAGS_COMMON += -O$(OPTIMIZE_LEVEL)
 
 # Include directories for Google Test
-CFLAGS_COMMON += -isystem $(CURDIR)/googletest/googletest/include
-CFLAGS_COMMON += -I$(CURDIR)/googletest/googletest
+CFLAGS_COMMON += -isystem $(SRCPATH)/submodules/googletest/googletest/include
+CFLAGS_COMMON += -I$(SRCPATH)/submodules/googletest/googletest
 
 LDFLAGS :=
 
@@ -211,11 +211,6 @@ test_scanner: test_scanner.o $(CCFILES:.cc=.o) $(CFILES:.c=.o)
 	$(C++) $(CCFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # Google Test
-googletest:
-	git clone https://github.com/google/googletest.git
-
-gtest-all.cc: googletest
-
 gtest-all.a: gtest-all.cc
 
 # Sbucket unit test
