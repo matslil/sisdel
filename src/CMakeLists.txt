@@ -102,12 +102,11 @@ set_target_properties(test_scanner PROPERTIES LINKER_LANGUAGE CXX)
 #
 
 find_package(Doxygen)
-option(BUILD_DOCUMENTATION "Create and install the HTML based API        
-documentation (requires Doxygen)" ${DOXYGEN_FOUND})
+option(BUILD_API_DOCUMENTATION "Create and install the PDF and HTML based API documentation (requires Doxygen)" ${DOXYGEN_FOUND})
 
 if(BUILD_DOCUMENTATION)
     if(NOT DOXYGEN_FOUND)
-         message(FATAL_ERROR "Doxygen is needed to build the documentation.")
+         message(FATAL_ERROR "Doxygen is needed to build the API documentation.")
     endif()
 
     add_custom_target(doc-api
