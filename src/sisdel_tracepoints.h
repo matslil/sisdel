@@ -3,7 +3,7 @@
 #define TRACEPOINT_PROVIDER tp_sisdel
 
 #undef TRACEPOINT_INCLUDE_FILE
-#define TRACEPOINT_INCLUDE_FILE ./sisdel_tracepoints.h
+#define TRACEPOINT_INCLUDE_FILE sisdel_tracepoints.h
 
 #ifdef __cplusplus
 extern "C"{

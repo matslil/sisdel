@@ -1,5 +1,3 @@
--*- mode: text; fill-margin: 80 -*-
-
 Welcome to Sisdel - Simple syntax dependency language
 =====================================================
 
@@ -21,18 +19,14 @@ freedom is good and what isn't.
 
 The directory layout:
 
-COPYING	      License, currently GPL3. The license model is not set in
-	      stone, but will be some variant of GPL.
-sisdel_design.odt A more detailed description of the
-	      language. Currently very volatile and might be
-	      completely rewritten anytime.
-REDME.md      This file, contains a short introduction.
-Makefile      Makefile to build everything. Invoke it from a separate
-	      directory so that build files will not be intermixed
-	      with source code. Use "-f <path>/Makefile" to point the
-	      file out.
-src/	      Directory where the source code is.
-unit-test/    Directory where the unit test implementation is.
+File              | Description
+------------------|----------------------------------------------------
+COPYING	          | License, which is Apache 2.0.
+sisdel_design.odt | A more detailed description of the language. Currently very volatile and might be completely rewritten anytime.
+REDME.md          | This file, contains a short introduction.
+Makefile          | Makefile to build everything. Invoke it from a separate directory so that build files will not be intermixed with source code. Use "-f <path>/Makefile" to point the file out.
+src/	          | Directory where the source code is.
+src/unit-test/    | Directory where the unit test implementation is.
 
 Ubuntu requirements for building documentation
 ----------------------------------------------
@@ -44,3 +38,20 @@ Ubuntu requirements for building documentation
  * texlive-latex-extra
  * texlive-fonts-recommended
  * librsvg2-bin
+
+License
+-------
+
+SPDX-License-Identifier: Apache-2.0
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy
+of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations
+under the License.

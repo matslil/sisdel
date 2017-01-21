@@ -44,7 +44,7 @@ public:
 		}
 
 	// Return line of code
-	const std::string& str(void) const { return m_str; }
+	constexpr const std::string& str(void) const noexcept { return m_str; }
 
 	constexpr size_t column(void) const noexcept
 		{ return m_col; }
