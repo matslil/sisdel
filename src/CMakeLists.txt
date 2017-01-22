@@ -119,3 +119,40 @@ if(BUILD_DOCUMENTATION)
 
 #    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION     share/doc)
 endif()
+
+#
+# Clang analyze target
+#
+
+FUNCTION(prepend var prefix)
+   set (listVar "")
+   foreach (f ${ARGN})
+      list (APPEND listVar "${prefix}${f}")
+   endforeach(f)
+   set (${var} "${listVar}" PARENT_SCOPE)
+endfunction (prepend)
+
+get_property(LINT_INCLUDE_DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+
+message (NOTICE " ${LINT_INCLUDE_DIRS}" )
+prepend (LINT_INCLUDE_DIRS -I "${LINT_INCLUDE_DIRS}")
+message (NOTICE " ${LINT_INCLUDE_DIRS}" )
+
+separate_arguments (LINT_FLAGS UNIX_COMMAND "${CMAKE_CXX_FLAGS} ${LINT_INCLUDE_DIRS}")
+
+message (NOTICE "${LINT_FLAGS}")
+
+set (LINT_CMD ${CMAKE_CXX_COMPILER} --analyze ${LINT_FLAGS} ${CMAKE_CURRENT_SOURCE_DIR}/sbucket.cc ${CMAKE_CURRENT_SOURCE_DIR}/file.cc ${CMAKE_CURRENT_SOURCE_DIR}/mmap_file.cc ${CMAKE_CURRENT_SOURCE_DIR}/token.cc ${CMAKE_CURRENT_SOURCE_DIR}/error.cc ${CMAKE_CURRENT_SOURCE_DIR}/position.cc ${CMAKE_CURRENT_SOURCE_DIR}/sisdel_tracepoints.c)
+
+add_custom_target (lint
+		  COMMAND ${LINT_CMD}
+		  DEPENDS
+		  ${CMAKE_CURRENT_SOURCE_DIR}/sbucket.cc
+		  ${CMAKE_CURRENT_SOURCE_DIR}/file.cc
+		  ${CMAKE_CURRENT_SOURCE_DIR}/mmap_file.cc
+		  ${CMAKE_CURRENT_SOURCE_DIR}/token.cc
+		  ${CMAKE_CURRENT_SOURCE_DIR}/error.cc
+		  ${CMAKE_CURRENT_SOURCE_DIR}/position.cc
+		  ${CMAKE_CURRENT_SOURCE_DIR}/sisdel_tracepoints.c
+		  VERBATIM)
+
