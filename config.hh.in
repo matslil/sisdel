@@ -20,12 +20,42 @@
 #ifndef CONFIG_HH
 #define CONFIG_HH
 
+/**
+ * Sisdel major version.
+ * Value is configured by CMake.
+ * The major version is used for backwards incompatible changes.
+ */
 #define SISDEL_VERSION_MAJOR @sisdel_VERSION_MAJOR@
+
+/**
+ * Sisdel minor version.
+ * Value is configured by CMake.
+ * The minor version is used for changes that are backwards compatible.
+ */
 #define SISDEL_VERSION_MINOR @sisdel_VERSION_MINOR@
+
+/**
+ * Name of git branch used when building.
+ * CMake uses git for this value.
+ */
 #define SISDEL_GIT_BRANCH @sisdel_GIT_BRANCH@
+
+/**
+ * Full hash of the commit used when building.
+ * CMake uses git for this value.
+ */
 #define SISDEL_GIT_COMMIT_HASH @sisdel_GIT_COMMIT_HASH@
 
+/**
+ * Stringify the parameter.
+ * Typically used when the contents of a macro is to be used as a string.
+ */
 #define STR(x) STRSTR(x)
+
+/*
+ * Helper for STR(), Makes sure the parameter is expanded before being
+ * stringified.
+ */
 #define STRSTR(x) #x
 
 #endif /* CONFIG_HH */

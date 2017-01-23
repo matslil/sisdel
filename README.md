@@ -39,6 +39,40 @@ Ubuntu requirements for building documentation
  * texlive-fonts-recommended
  * librsvg2-bin
 
+Getting started
+---------------
+
+The below mentioned <build-dir> should be a path outside the source
+directory tree.
+
+Make sure the googletest GIT submodule has been cloned before starting
+
+1.     mkdir -p <build-dir>
+2.     cd <build-dir>
+3.     cmake <source-dir>
+
+Now you can run make. To make the default set of target, just run make:
+
+    make
+
+Right now this builds test applications including unit test binaries.
+
+If you want user documentation, run doc target:
+
+    make doc
+
+To get source code documentation, use doc-api target:
+
+    make doc-api
+
+To run the unit tests, use:
+
+    make test
+
+If you want to do some static analyzing for finding bugs:
+
+    make clean && scan-build make
+
 License
 -------
 
