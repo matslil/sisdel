@@ -23,6 +23,8 @@ set(CMAKE_CXX_COMPILER "clang++")
 
 set (CMAKE_CXX_STANDARD 14)
 
+set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/Modules" )
+
 # Name the project
 project (Sisdel)
 
