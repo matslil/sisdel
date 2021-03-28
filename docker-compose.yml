@@ -1,0 +1,10 @@
+version: '2'
+services:
+    do:
+        build: .
+        volumes:
+        - ${srcroot}:${srcroot}:ro
+        - ${buildroot}:${buildroot}:rw
+        working_dir: ${buildroot}
+        user: ${uid}:${gid}
+

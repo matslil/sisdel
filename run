@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -xeEuo pipefail
+
+readonly srcroot=$(dirname $0)
+readonly buildroot=$(pwd)
+readonly uid=$(id -u)
+readonly gid=$(id -g)
+
+export srcroot buildroot uid gid
+
+cmd=( . /venv/bin/activate '&&' )
+
+case "$1" in
+    compose) ( cd "${srcroot}" && docker-compose build ); exit $?;;
+    config) cmd+=( cmake -G Ninja "${srcroot}" );;
+    build)  cmd+=( cmake --build . );;
+    *) printf '%s: Unknown command, must be one of: config build'; exit 1;;
+esac
+shift
+
+(( $# == 0 )) || cmd+=( "$@" )
+
+( cd "${srcroot}" && docker-compose run do bash -c "${cmd[*]}" )
+
