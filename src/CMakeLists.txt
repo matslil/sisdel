@@ -15,7 +15,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.14)
 
 set(EXTRA_SRCFILES "${CMAKE_CURRENT_SOURCE_DIR}/config.cc")
 
@@ -94,28 +94,27 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lmpfr -lgmp")
 add_subdirectory (unit-test)
 
 add_executable (test_scanner test_scanner.cc sbucket.cc file.cc mmap_file.cc token.cc error.cc position.cc ${EXTRA_SRCFILES})
-
 set_target_properties(test_scanner PROPERTIES LINKER_LANGUAGE CXX)
 
 #
 # Doxygen
 #
 
-find_package(Doxygen)
-option(BUILD_API_DOCUMENTATION "Create and install the PDF and HTML based API documentation (requires Doxygen)" ${DOXYGEN_FOUND})
+#find_package(Doxygen)
+#option(BUILD_API_DOCUMENTATION "Create and install the PDF and HTML based API documentation (requires Doxygen)" ${DOXYGEN_FOUND})
 
-if(BUILD_API_DOCUMENTATION)
-    if(NOT DOXYGEN_FOUND)
-         message(FATAL_ERROR "Doxygen is needed to build the API documentation.")
-    endif()
+#if(BUILD_API_DOCUMENTATION)
+#    if(NOT DOXYGEN_FOUND)
+#         message(FATAL_ERROR "Doxygen is needed to build the API documentation.")
+#    endif()
 
-    add_custom_target(doc-api
-                      COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/sisdel.doxygen
-                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-		      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/sisdel.doxygen
-                      COMMENT "Generating API documentation with Doxygen"
-                      VERBATIM)
-     configure_file ("sisdel.doxygen" "sisdel.doxygen" @ONLY)
+#    add_custom_target(doc-api
+#                      COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/sisdel.doxygen
+#                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#		      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/sisdel.doxygen
+#                      COMMENT "Generating API documentation with Doxygen"
+#                      VERBATIM)
+#     configure_file ("sisdel.doxygen" "sisdel.doxygen" @ONLY)
 
 #    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION     share/doc)
-endif()
+#endif()
