@@ -12,8 +12,13 @@ cmd=( . /venv/bin/activate '&&' )
 
 case "$1" in
     compose) ( cd "${srcroot}" && docker-compose build ); exit $?;;
-    config) cmd+=( cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE="\${CONAN_USER_HOME}/conan_paths.cmake" "${srcroot}" );;
-    build)  cmd+=( cmake --build . );;
+    config) cmd+=( cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE="\${CONAN_USER_HOME}/conan_paths.cmake" "${srcroot}" )
+	    ln -s "$0"
+	    ;;
+    build)  cmd+=( cmake --build . )
+            ;;
+    doc)    cmd+=( cmake --build . --target doc )
+	    ;;
     *) printf '%s: Unknown command, must be one of: config build'; exit 1;;
 esac
 shift

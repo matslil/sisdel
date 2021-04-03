@@ -22,7 +22,6 @@
  */
 
 #include <utility>
-#include "sisdel_tracepoints.h"
 #include "sbucket.hh"
 #include "hash.hh"
 
@@ -34,12 +33,10 @@ sbucket::sbucket()
 	: m_entry()
 {
 	m_buckets.fill(-1);
-	tracepoint(tp_sisdel, tp_sbucket_init, this);
 }
 
 sbucket::~sbucket()
 {
-	tracepoint(tp_sisdel, tp_sbucket_destroy, this);
 }
 
 string_idx_t sbucket::find_add_hashed(const char *str,
@@ -54,7 +51,6 @@ string_idx_t sbucket::find_add_hashed(const char *str,
 	     idx = m_entry[idx].m_next_idx) {
 		if ((m_entry[idx].m_str.compare(0, str_len, str, str_len) == 0)
 		    && (m_entry[idx].m_str.length() == str_len)) {
-			tracepoint(tp_sisdel, tp_sbucket_find, hash, str, str_len, idx);
 			return idx;
 		}
 	}
@@ -85,8 +81,6 @@ string_idx_t sbucket::find_add_hashed(const char *str,
 		m_entry[idx].m_next_idx = new_idx;
 	}
 	
-	tracepoint(tp_sisdel, tp_sbucket_add, hash, str, str_len, new_idx);
-
 	return new_idx;
 }
 
@@ -108,6 +102,5 @@ string_idx_t sbucket::find_add(const char *str)
 
 const char *sbucket::operator[](string_idx_t idx) const {
 	const char * const str = m_entry[idx].m_str.c_str();
-	tracepoint(tp_sisdel, tp_sbucket_index, idx, str);
 	return str;
 }

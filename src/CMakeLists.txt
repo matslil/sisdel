@@ -19,13 +19,9 @@ cmake_minimum_required (VERSION 3.14)
 
 option( DISABLE_WERROR "Do not make warnings fail the build" FALSE )
 
-# Used to find lttng
-find_package(PkgConfig)
 find_package( Boost REQUIRED )
 find_package( gmp REQUIRED )
 find_package( mpfr REQUIRED )
-
-pkg_check_modules( LTTNG_UST lttng-ust )
 
 find_program(LCOV lcov)
 
@@ -51,27 +47,6 @@ target_compile_definitions( sisdel PUBLIC -Dsisdel_VERSION_MAJOR=${sisdel_VERSIO
 
 target_compile_features( sisdel PUBLIC cxx_std_20 )
 
-if (LTTNG_UST_FOUND)
-  target_compile_definitions( sisdel PRIVATE HAVE_LTTNG )
-  message(STATUS "lttng-ust detected, tracing enabled")
-
-  # Handle include directories
-  target_include_directories( sisdel PRIVATE ${LTTNG_UST_INCLUDE_DIRS} . )
-
-  # Handle library paths
-  target_link_directories( sisdel ${LTTNG_UST_LIBRARY_DIRS} )
-
-  # Handle compiler flags
-  target_compile_options( sisdel PRIVATE ${LTTNG_UST_CFLAGS} )
-
-  # Handle linker flags
-  target_link_options( sisdel ${LTTNG_UST_LDFLAGS} )
-
-  target_sources( sisdel sisdel_tracepoints.c )
-else()
-  message( STATUS "lttng-ust NOT detected, tracing disabled" )
-endif()
-
 if (LCOV)
   # Add profile support
   message (STATUS "Collecting code coverage information")
@@ -89,25 +64,3 @@ target_link_libraries( test_scanner PRIVATE sisdel )
 # Unit tests
 add_subdirectory (unit-test)
 
-#
-# Doxygen
-#
-
-#find_package(Doxygen)
-#option(BUILD_API_DOCUMENTATION "Create and install the PDF and HTML based API documentation (requires Doxygen)" ${DOXYGEN_FOUND})
-
-#if(BUILD_API_DOCUMENTATION)
-#    if(NOT DOXYGEN_FOUND)
-#         message(FATAL_ERROR "Doxygen is needed to build the API documentation.")
-#    endif()
-
-#    add_custom_target(doc-api
-#                      COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/sisdel.doxygen
-#                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#		      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/sisdel.doxygen
-#                      COMMENT "Generating API documentation with Doxygen"
-#                      VERBATIM)
-#     configure_file ("sisdel.doxygen" "sisdel.doxygen" @ONLY)
-
-#    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION     share/doc)
-#endif()

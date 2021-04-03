@@ -119,7 +119,7 @@ private:
 
 /**
  * Output file position as I/O stream.
- * Output format: <file name>:<line>:<column>
+ * Output format: file_name:line:column
  * @returns ostream object appended with position information.
  */
 std::ostream &operator<<(
