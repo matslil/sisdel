@@ -19,7 +19,7 @@
   under the License.
  */
 
-#include <catch2/catch_all.hpp>
+#include <catch2/catch.hpp>
 #include "mmap_file.hh"
 
 TEST_CASE("test_mmap_file:file_not_found") {

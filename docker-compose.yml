@@ -1,7 +1,10 @@
 version: '2'
 services:
     do:
-        build: .
+        build:
+            context: .
+            args:
+            - buildroot
         volumes:
         - ${srcroot}:${srcroot}:ro
         - ${buildroot}:${buildroot}:rw

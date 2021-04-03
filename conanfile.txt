@@ -1,0 +1,9 @@
+[requires]
+catch2/2.13.4
+boost/1.75.0
+gmp/6.2.1
+mpfr/4.1.0
+
+[generators]
+cmake_paths
+cmake_find_package

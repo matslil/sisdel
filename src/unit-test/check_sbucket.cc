@@ -21,7 +21,7 @@ under the License.
 
 #include <random>
 #include <algorithm>
-#include <catch2/catch_all.hpp>
+#include <catch2/catch.hpp>
 #include "environment.hh"
 
 TEST_CASE("sbucket") {

@@ -22,7 +22,6 @@
  */
 
 #include <utility>
-#include <lttng/tracepoint.h>
 #include "sisdel_tracepoints.h"
 #include "sbucket.hh"
 #include "hash.hh"

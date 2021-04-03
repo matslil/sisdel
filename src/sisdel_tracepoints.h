@@ -1,4 +1,6 @@
-
+#ifndef HAVE_LTTNG
+#define tracepoint(...)
+#else
 #undef TRACEPOINT_PROVIDER
 #define TRACEPOINT_PROVIDER tp_sisdel
 
@@ -110,3 +112,4 @@ TRACEPOINT_EVENT (
 }
 #endif /* __cplusplus */
 
+#endif /* HAVE_LTTNG */

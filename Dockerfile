@@ -1,5 +1,7 @@
 FROM bitnami/minideb:buster
 
+ARG buildroot
+
 ADD https://github.com/Kitware/CMake/releases/download/v3.20.0/cmake-3.20.0-linux-x86_64.sh /
 
 RUN chmod +x /cmake-3.20.0-linux-x86_64.sh && /cmake-3.20.0-linux-x86_64.sh --skip-license --prefix=/usr && rm /cmake-3.20.0-linux-x86_64.sh
@@ -10,14 +12,14 @@ RUN OLD_GID=$(getent group sys | cut -d: -f3) && \
     find / -mount -group ${OLD_GID} -exec chgrp -h nogroup {} \;
 
 # Install non-python build tools
-RUN install_packages clang clang-format clang-tidy lldb llvm python3-minimal python3-venv python3-pip ninja-build libboost-all-dev doxygen graphviz pkg-config libgmp-dev liblttng-ust-dev lcov git libmpfr-dev
+RUN install_packages python3-minimal python3-venv python3-pip doxygen graphviz lsb-release wget gnupg software-properties-common make ninja-build coreutils lcov
 
-RUN git clone https://github.com/catchorg/Catch2.git && \
-    cd Catch2 && \
-    cmake -G Ninja -Bbuild -H. -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=/usr && \
-    cmake --build build/ --target install && \
-    cd .. && \
-    rm -rf Catch2
+# Install llvm/Clang
+ADD https://apt.llvm.org/llvm.sh /tmp/
+RUN chmod +x /tmp/llvm.sh
+RUN /tmp/llvm.sh 12
+RUN rm /tmp/llvm.sh
+RUN for bin in $( ls /usr/bin/llvm*-12 /usr/bin/clang*-12 ); do update-alternatives --install "${bin%-12}" $(basename "${bin%-12}") "${bin}" 200; done
 
 # Setup virtual environment for Python
 RUN python3 -m venv /venv
@@ -25,4 +27,10 @@ RUN python3 -m venv /venv
 # Install python build tools
 RUN . /venv/bin/activate && pip install --upgrade pip
 RUN . /venv/bin/activate && pip install conan sphinx breathe
+
+ENV CONAN_USER_HOME=/conan
+
+COPY conanfile.txt profile.txt /conan/
+
+RUN . /venv/bin/activate && cd "${CONAN_USER_HOME}" && conan install --build missing --profile /conan/profile.txt /conan/conanfile.txt && conan remove --builds --src --force '*'
 
