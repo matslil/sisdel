@@ -67,6 +67,8 @@ foreach(_comp IN LISTS Sphinx_FIND_COMPONENTS)
     # Do nothing, sphinx-quickstart is optional, but looked up by default.
   elseif(_comp STREQUAL "breathe")
     _Sphinx_find_extension(${_comp})
+  elseif(_comp STREQUAL "sphinx_rtd_theme")
+    _Sphinx_find_extension(${_comp})
   else()
     message(WARNING "${_comp} is not a valid or supported Sphinx extension")
     set(Sphinx_${_comp}_FOUND FALSE)
@@ -143,17 +145,28 @@ function(_Sphinx_generate_confpy _target _cachedir)
     set(_exts "--extensions=${_exts}")
   endif()
 
+  set(_extra_args )
+  list( APPEND _extra_args -q )
+  list( APPEND _extra_args --no-makefile )
+  list( APPEND _extra_args --no-batchfile )
+  list( APPEND _extra_args -p "${SPHINX_PROJECT}" )
+  list( APPEND _extra_args -a "${SPHINX_AUTHOR}" )
+  list( APPEND _extra_args -v "${SPHINX_VERSION}" )
+  list( APPEND _extra_args -r "${SPHINX_RELEASE}" )
+  list( APPEND _extra_args -l "${SPHINX_LANGUAGE}" )
+  if( SPHINX_TEMPLATEDIR )
+    list( APPEND _extra_args -t "${SPHINX_TEMPLATEDIR}" )
+  endif()
+  if( Sphinx_sphinx_rtd_theme_FOUND )
+    list( APPEND _extra_args -d html_theme=sphinx_rtd_theme )
+  else()
+    list( APPEND _extra_args -d html_theme=alabaster )
+  endif()
+
   set(_templatedir "${CMAKE_CURRENT_BINARY_DIR}/${_target}.template")
   file(MAKE_DIRECTORY "${_templatedir}")
   execute_process(
-    COMMAND "${SPHINX_QUICKSTART_EXECUTABLE}"
-              -q --no-makefile --no-batchfile
-              -p "${SPHINX_PROJECT}"
-              -a "${SPHINX_AUTHOR}"
-              -v "${SPHINX_VERSION}"
-              -r "${SPHINX_RELEASE}"
-              -l "${SPHINX_LANGUAGE}"
-              ${_opts} ${_exts} "${_templatedir}"
+    COMMAND "${SPHINX_QUICKSTART_EXECUTABLE}" ${_extra_args} ${_opts} ${_exts} "${_templatedir}"
     RESULT_VARIABLE _result
     OUTPUT_QUIET)
 

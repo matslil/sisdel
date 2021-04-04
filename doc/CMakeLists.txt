@@ -15,10 +15,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 3.9)
+cmake_minimum_required( VERSION 3.9 )
 
-find_package(Doxygen)
-find_package(Sphinx COMPONENTS breathe)
+set( SPHINX_TEMPLATEDIR "${CMAKE_CURRENT_SOURCE_DIR}/templates" )
+
+find_package( Doxygen )
+find_package( Sphinx COMPONENTS breathe sphinx_rtd_theme )
 
 if ( Sphinx_FOUND AND Doxygen_FOUND )
     set( CAN_BUILD_USER_DOC 1 )

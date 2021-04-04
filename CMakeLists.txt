@@ -17,16 +17,14 @@
 
 cmake_minimum_required (VERSION 3.1)
 
-# Only supports Clang, GCC/G++ will fail
-set(CMAKE_C_COMPILER "clang")
-set(CMAKE_CXX_COMPILER "clang++")
-
-set (CMAKE_CXX_STANDARD 14)
-
 set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/Modules" )
 
 # Name the project
-project (Sisdel)
+project (Sisdel
+	VERSION 0.0.1
+	DESCRIPTION "Generic programming language"
+	HOMEPAGE_URL https://github.com/matslil/sisdel
+	LANGUAGES CXX)
 
 # Create "test" build target, used by unit-test subdirectory
 enable_testing()

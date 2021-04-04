@@ -13,7 +13,6 @@ cmd=( . /venv/bin/activate '&&' )
 case "$1" in
     compose) ( cd "${srcroot}" && docker-compose build ); exit $?;;
     config) cmd+=( cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE="\${CONAN_USER_HOME}/conan_paths.cmake" "${srcroot}" )
-	    ln -s "$0"
 	    ;;
     build)  cmd+=( cmake --build . )
             ;;
