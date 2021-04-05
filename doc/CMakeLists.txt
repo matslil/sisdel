@@ -20,7 +20,7 @@ cmake_minimum_required( VERSION 3.9 )
 set( SPHINX_TEMPLATEDIR "${CMAKE_CURRENT_SOURCE_DIR}/templates" )
 
 find_package( Doxygen )
-find_package( Sphinx COMPONENTS breathe sphinx_rtd_theme )
+find_package( Sphinx COMPONENTS breathe exhale sphinx_rtd_theme )
 
 if ( Sphinx_FOUND AND Doxygen_FOUND )
     set( CAN_BUILD_USER_DOC 1 )

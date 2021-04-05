@@ -114,4 +114,31 @@ intersphinx_mapping = {'https://docs.python.org/3/': None}
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 {%- endif %}
+{%- if 'breathe' in extensions %}
 
+# -- Options for breathe extension --------------------------------------------
+
+breathe_projects = {
+  "{{ project_name }}": "./doxyoutput/xml"
+}
+breathe_default_project = "{{ project_name }}"
+
+{%- endif %}
+{%- if 'exhale' in extensions %}
+
+# -- Options for exhale extension --------------------------------------------
+exhale_args = {
+  "verboseBuild":          True,
+  "containmentFolder":     "{{ sourcedir }}/api",
+  "rootFileName":          "index.rst",
+  "rootFileTitle":         "Sisdel API",
+  "doxygenStripFromPath":  "{{ reporoot }}",
+  "createTreeView":        True,
+  "exhaleExecutesDoxygen": True,
+  "exhaleDoxygenStdin":    "INPUT = {{ reporoot }}/src"
+}
+
+primary_domain = 'cpp'
+
+highlight_language = 'cpp'
+{%- endif %}

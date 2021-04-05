@@ -26,7 +26,7 @@ RUN python3 -m venv /venv
 
 # Install python build tools
 RUN . /venv/bin/activate && pip install --upgrade pip
-RUN . /venv/bin/activate && pip install conan sphinx breathe sphinx-rtd-theme
+RUN . /venv/bin/activate && pip install conan sphinx breathe sphinx-rtd-theme exhale
 
 ENV CONAN_USER_HOME=/conan
 
