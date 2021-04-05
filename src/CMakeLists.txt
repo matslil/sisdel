@@ -47,6 +47,8 @@ target_compile_definitions( sisdel PUBLIC -Dsisdel_VERSION_MAJOR=${sisdel_VERSIO
 
 target_compile_features( sisdel PUBLIC cxx_std_20 )
 
+target_include_directories( sisdel PUBLIC include )
+
 if (LCOV)
   # Add profile support
   message (STATUS "Collecting code coverage information")
@@ -60,7 +62,4 @@ endif ()
 
 add_executable( test_scanner test_scanner.cc )
 target_link_libraries( test_scanner PRIVATE sisdel )
-
-# Unit tests
-add_subdirectory (unit-test)
 

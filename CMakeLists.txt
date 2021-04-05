@@ -60,3 +60,7 @@ add_subdirectory (src)
 
 # Documentation
 add_subdirectory (doc)
+
+# Unit tests
+add_subdirectory (unit-test)
+

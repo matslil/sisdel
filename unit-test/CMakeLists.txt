@@ -21,7 +21,6 @@ find_package( Catch2 REQUIRED )
 
 add_executable( unittest unittest.cc check_mmap_file.cc )
 target_link_libraries( unittest PRIVATE Catch2::Catch2 sisdel )
-target_include_directories( unittest PRIVATE .. )
 
 # Make sure data files are copied to directory where unittest binary is built
 add_custom_command(
