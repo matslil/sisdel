@@ -34,18 +34,6 @@ Composable
 - Be able to write knew variants of a module without needing to recompile the other parts of the code
 - Simple syntax to promote using the language as a domain specific language (easier to modify its looks)
 
-Values
-======
-
-Following standard values are defined:
-
-- nil - Represents the empty value
-- true - For true
-- false - For false
-- any - for any one value
-- all - for all possible values
-- err - for errors
-
 Source of Inspiration
 =====================
 
@@ -144,41 +132,105 @@ Examples:
 
 This creates a match expression similar to how regular expressions work. It will match when a string is found which optionally begins with the string literal 'Prefix: ', followed by on or more integers separated with literal ',', followed by literal string ': ', followed by a word and ending with a platform dependent new-line character sequence. The matches are done with character case ignored.
 
+Building blocks
+===============
+
+Sisdel is a class-less object oriented language. Objects are values with some meta-data associated with it. In some cases these values are available directly, e.g. strings and numbers, and sometimes they need to be calculated, e.g. object methods.
+
+Error handling is done primarily using error return values. Exceptions are only used to describe when an object has been compromised. When an object throws an exception, it signals that it can no longer be used. Any further attempts to use the object will result in an exception. In this case, the only use for the object is to have a context for the exception.
+
+Object
+
+Value
+
 Type
-====
 
-Type in Sisdel consists of three parts:
+Method
 
-1. Base type
+Constraint
+
+Device
+  Special object that represents some hardware in a specific operating state. If the hardware changes operating state, this is reflected using a new device. A device has a name, and read and write methods. Any operation done on a device is seen as a side effect.
+
+State
+
+Type
+----
+
+Type in Sisdel consists of the following parts:
+
+1. Fundamental types
 2. Constraints
-3. Representation
+3. Side effects
+4. Representation
 
-Base type are meant to describe fundamentally different things, while constrictions are meant to limit the use of the type. The representation is how the data is stored, and does not by itself prohibit use but rather triggers conversions.
+Fundamental type are meant to describe fundamentally different things, while constrictions are meant to limit the use of the type. Side effects are operations done to a device, and signals synchronization points. The representation is how the data is stored, and does not by itself prohibit use but rather triggers conversions.
 
-Base type
----------
+Fundamental types
+~~~~~~~~~~~~~~~~~
 
-- Number, representations: integer, decimal, rational
-- String, representations: utf-8
-- Association, name/value pair
-- Set, unsorted list of items
-- List, sorted list of items
-- One of, only one of the types listed apply
+Fundamental types describes things which cannot be used interchangably without conversion.
 
-Note: A single item is compatible with both set and list, since it can be viewed as a list or set with only one item and since the list or set has only one item it can be viewed as either sorted or unsorted.
+Number
+  Any rational number
 
-Note: To simulate synchronization points in the code, a list of sets can be used. This way each set can be executed in parallel, but the sets themselves are executed sequentially.
+String
+  UTF-8 Unicode string with associated size field.
+
+Set
+  Collection of objects with no ordering.
+
+List
+  Strict sequence of objects. Typically used to specify when time matters.
+
+Map
+  Collection of key value pairs. Different keys can have different types, same is true for values. Arrays are restricted maps, where the key type is unsigned integer, and there is a single specified type for all values.
+
+
+.. NOTE::
+   Set, list and map has a size, and this size can be infinite. A random generator method would be an example of something that returns an infinite list. You cannot freely mix inifinite lists with finite lists freely, you need to specify a portion of the infinite list to do a combination.
 
 Constraints
------------
+~~~~~~~~~~~
 
-- [list/set] finite: There is an upper bound for length of list or set
-- [list/set] type: All items in the list/set are compatible with type
-- [all] storage: Can be maximum number of bytes to store data, or need to adhere to certain standard like IEEE 754
-- [all] unit: Manually specified constraint to help distinguish different things that otherwise would be type compatible
-- [number] value range: Maximum and/or minimum value
-- [string] character set: Allowed characters in string
-- [number] precision: How many digits are valid
+Constraints can be put on types to limit what is accepted. A constraint expression is basically an object method applied to one type with the other type as parameter, and if this expression returns true, those two types are compatible.
+
+Constraint expressions can work on meta-data to restrict number of elements in an array, whether all elements must have same type, specify accepted units and restrict value representations. Constraint expressions can also work on value to restrict value range or precision.
+
+As a special case there are units. Unit has as its sole purpose to create incompatible types, and is typically used to indicate types that are not interchangable even though Sisdel type inference would accept them. This is useful for example to distinguish two integers where one might be weight and the other length. These are very different things, but since both are integers they could be used interchangably and therefore potentially cause bugs. Assigning different units to them makes them non-compatible, and makes it illegal to specify length when weight was expected.
+
+There is also a state concept which can be used by constraints. State is another meta-data associated with objects.
+
+Side effects
+~~~~~~~~~~~~
+
+Sisdel has a concept of device, which is meant to mirror hardware. A device can be read, written, opened, closed and changed. All of these operations change the state of the device, and it is possible to describe dependencies between device states.
+
+If an object affects a device in some of those ways, this becomes part of the object type. So an object type can be "read from device x".
+
+Representation
+~~~~~~~~~~~~~~
+
+Representation describes how the value is stored, e.g. number of bits used, endian, data format. It can for example be used to say that a map is stored as Yaml. If a specific representation is requested, and the value has another representation, this triggers a conversion. This is an operator run on the original representation whose return value need to be of the expected representation. If no such conversion has been defined, this becomes a type incompatibility error.
+
+Type compatibility
+~~~~~~~~~~~~~~~~~~
+
+Object methods are not a type in themselves. Object method types are equivalent with their return type if the method takes no parameters. If the method takes parameter it is type equivalent with a map where the type of the values are the return type of the method, and the type of the key is the type of the parameter.
+
+This means that any context requiring a simple value can be replaced with an object method returning same type of value, and also vice versa.
+
+Similarly, any context requiring a map can be replaced with a method whose return type matches the map value type and method parameter type matches map key type. Since map key type can be different for different keys, any valid key type for the map must match all valid types for the object method return value, and same is true for map value type and object method parameter type.
+
+.. NOTE::
+   Side-effects are part of the type. Since immediate values and maps cannot have side-effects, they will never be type compatible with object methods having side-effects.
+
+An array is a map where the key type is constrained to be unsigned integer. This means that an object method taking unsigned integer parameter is type compatible with array, if the array elements are type compatible with the return type of the object method.
+
+As a special case, an array or map with single value is type compatible with each other or an immediate value if the values themselves are type compatible. An array storing a single string, or a map storing a single string as value, or an immediate value being a string, are all type compatible and can therefore all be used interchangably.
+
+State is not by itself a type, but can be used with constrictions to describe a type. The state needs a context to have a meaning, which also mean that different contexts can have same name of state, but refer to different things.
+
 
 Syntax Playground
 =================
