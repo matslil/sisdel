@@ -1,0 +1,67 @@
+---
+
+on:
+  push:
+    paths:
+    - 'src/**'
+    - 'conanfile.txt'
+    - 'profile-*.txt'
+  pull_request:
+    paths:
+    - 'src/**'
+env:
+  CONAN_USER_HOME: ${{ env.GITHUB_WORKSPACE }}
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+          - windows-latest
+          - macos-latest
+    steps:
+    - id: cmake
+      name: Install CMake
+      uses: lukka/get-cmake@latest
+
+    - id: conan-cache
+      name: Use cached libraries built by Conan
+      uses: actions/cache@v2
+      with:
+        path: ${{ env.CONAN_USER_HOME }}
+        key: conan-cache-${{ runner.os }}-${{ hashFiles("conanfile.txt;profile-${{ runner.os }}.txt") }}
+    - id: conan
+      name: Install Conan
+      if: steps.conan-cache.outputs.cache-hit != 'true'
+      uses: turtlebrowser/get-conan@main
+    - id: conan-libs
+      name: Install libraries with Conan
+      if: steps.conan-cache.outputs.cache-hit != 'true'
+      needs: conan
+      run: conan install --profile profile-${{ runner.os }}.txt conanfile.txt
+
+    - id: checkout
+      name: Check out repository
+      uses: actions/checkout@v2
+      with:
+        path: 'src'
+
+    - id: mkdir
+      name: Create build directory
+      run: cmake -E make_directory build
+
+    - id: config
+      needs:
+      - cmake
+      - conan-libs
+      - mkdir
+      name: Configure CMake
+      run: cmake ../src
+      working_directory: build
+    - id: build
+      needs: config
+      name: Build library
+      run: cmake --build .
+      working_directory: build
+

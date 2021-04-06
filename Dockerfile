@@ -29,8 +29,10 @@ RUN . /venv/bin/activate && pip install --upgrade pip
 RUN . /venv/bin/activate && pip install conan sphinx breathe sphinx-rtd-theme exhale
 
 ENV CONAN_USER_HOME=/conan
+ENV CC=/usr/bin/clang
+ENV CXX=/usr/bin/clang++
 
-COPY conanfile.txt profile.txt /conan/
+COPY conanfile.txt profile-Linux.txt /conan/
 
-RUN . /venv/bin/activate && cd "${CONAN_USER_HOME}" && conan install --build missing --profile /conan/profile.txt /conan/conanfile.txt && conan remove --builds --src --force '*'
+RUN . /venv/bin/activate && cd "${CONAN_USER_HOME}" && conan install --build missing --profile /conan/profile-Linux.txt /conan/conanfile.txt && conan remove --builds --src --force '*'
 
