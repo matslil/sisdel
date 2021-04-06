@@ -90,11 +90,7 @@ function(_Sphinx_generate_confpy _target _cachedir)
   endif()
 
   if(NOT DEFINED SPHINX_AUTHOR)
-    set(SPHINX_AUTHOR "${SPHINX_PROJECT} committers")
-  endif()
-
-  if(NOT DEFINED SPHINX_COPYRIGHT)
-    string(TIMESTAMP "%Y, ${SPHINX_AUTHOR}" SPHINX_COPYRIGHT)
+	  set(SPHINX_AUTHOR "${PROJECT_NAME} committers")
   endif()
 
   # Extensions known to quickstart, needs another parameter to enable

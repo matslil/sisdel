@@ -19,27 +19,15 @@ cmake_minimum_required( VERSION 3.9 )
 
 set( SPHINX_TEMPLATEDIR "${CMAKE_CURRENT_SOURCE_DIR}/templates" )
 
-find_package( Doxygen )
+#find_package( Doxygen )
 find_package( Sphinx COMPONENTS breathe exhale sphinx_rtd_theme )
 
-if ( Sphinx_FOUND AND Doxygen_FOUND )
-    set( CAN_BUILD_USER_DOC 1 )
+if ( Sphinx_FOUND )
+    sphinx_add_docs(
+	    doc
+	    SOURCE_DIRECTORY .
+	    )
 else()
-    set( CAN_BUILD_USER_DOC 0 )
     message( STATUS "Not all tools found to build documentation" )
 endif()
 
-if( CAN_BUILD_USER_DOC )
-    set( DOXYGEN_GENERATE_HTML NO )
-    set( DOXYGEN_GENERATE_XML YES )
-    doxygen_add_docs( sisdel_doxygen "../src" )
-
-    sphinx_add_docs(
-	    doc
-	    BREATHE_PROJECTS sisdel_doxygen
-	    BUILDER html
-	    SOURCE_DIRECTORY .
-	    )
-    
-#    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION     share/doc)
-endif()

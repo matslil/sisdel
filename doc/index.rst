@@ -6,7 +6,7 @@ Sisdel
    :caption: Contents:
 
    design_decisions
-   doxygen
+   api/index
 
 
 Indices and tables
