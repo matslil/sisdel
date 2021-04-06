@@ -2,4 +2,4 @@ Sisdel Implementation
 =====================
 
 .. doxygenindex::
-   :project: Sisdel
+   :project: sisdel

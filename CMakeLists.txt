@@ -17,10 +17,12 @@
 
 cmake_minimum_required (VERSION 3.1)
 
+include( GNUInstallDirs )
+
 set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/Modules" )
 
 # Name the project
-project (Sisdel
+project (sisdel
 	VERSION 0.0.1
 	DESCRIPTION "Generic programming language"
 	HOMEPAGE_URL https://github.com/matslil/sisdel
