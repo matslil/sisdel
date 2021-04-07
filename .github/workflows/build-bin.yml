@@ -69,12 +69,17 @@ jobs:
       - conan-libs
       - mkdir
       name: Configure CMake
-      run: cmake ../src
+      run: cmake -G "Ninja Multi-Config" ../src
       working_directory: build
-    - id: build
+    - id: build-release
       needs: config
-      name: Build library
-      run: cmake --build .
+      name: Build release library
+      run: cmake --build . --config Release
+      working_directory: build
+    - id: build-debug
+      needs: config
+      name: Build debug library
+      run: cmake --build . --config Debug
       working_directory: build
 
   analyze:

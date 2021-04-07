@@ -15,21 +15,18 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required( VERSION 3.9 )
+cmake_minimum_required (VERSION 3.14)
 
-set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Modules" )
-
-set( SPHINX_TEMPLATEDIR "${CMAKE_CURRENT_SOURCE_DIR}/templates" )
-
-find_package( Sphinx COMPONENTS breathe exhale sphinx_rtd_theme REQUIRED )
-
-sphinx_add_docs(
-    doc
-    SOURCE_DIRECTORY .
+project( ${CMAKE_PROJECT_NAME}-parser
+	VERSION ${CMAKE_PROJECT_VERSION}
+	HOMEPAGE_URL ${CMAKE_PROJECT_HOMEPAGE_URL}
+	DESCRIPTION "${CMAKE_PROJECT_NAME} parser application"
 )
 
-install( DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/build/
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc
-        COMPONENT doc
+add_executable( ${PROJECT_NAME} test_scanner.cc )
+target_link_libraries( ${PROJECT_NAME} PRIVATE ${CMAKE_PROJECT_NAME} )
+
+install( TARGETS ${PROJECT_NAME}
+	COMPONENT parser
 )
 

@@ -12,7 +12,7 @@ RUN OLD_GID=$(getent group sys | cut -d: -f3) && \
     find / -mount -group ${OLD_GID} -exec chgrp -h nogroup {} \;
 
 # Install non-python build tools
-RUN install_packages python3-minimal python3-venv python3-pip doxygen graphviz lsb-release wget gnupg software-properties-common make ninja-build coreutils lcov
+RUN install_packages python3-minimal python3-venv python3-pip doxygen graphviz lsb-release wget gnupg software-properties-common make ninja-build coreutils lcov rpm
 
 # Install llvm/Clang
 ADD https://apt.llvm.org/llvm.sh /tmp/

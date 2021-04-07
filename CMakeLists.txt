@@ -17,16 +17,15 @@
 
 cmake_minimum_required (VERSION 3.1)
 
-include( GNUInstallDirs )
-
-set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/Modules" )
-
 # Name the project
 project (sisdel
 	VERSION 0.0.1
 	DESCRIPTION "Generic programming language"
 	HOMEPAGE_URL https://github.com/matslil/sisdel
 	LANGUAGES CXX)
+
+include( GNUInstallDirs )
+include( CMakePackageConfigHelpers )
 
 # Create "test" build target, used by unit-test subdirectory
 enable_testing()
@@ -44,25 +43,57 @@ execute_process(
 execute_process(
   COMMAND git rev-parse HEAD
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE sisdel_GIT_COMMIT_HASH
+  OUTPUT_VARIABLE ${PROJECT_NAME}_GIT_COMMIT_HASH
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# Set version
-set (sisdel_VERSION_MAJOR 1)
-set (sisdel_VERSION_MINOR 0)
-configure_file (
-  "${PROJECT_SOURCE_DIR}/config.hh.in"
-  "${PROJECT_BINARY_DIR}/config/config.hh"
-  )
-include_directories("${PROJECT_BINARY_DIR}/config")
+# Library
+option( BUILD_LIB "Build ${PROJECT_NAME} library" TRUE )
+if( BUILD_LIB )
+  add_subdirectory ( lib )
+endif()
 
-# Source code
-add_subdirectory (src)
+# Parser application
+option( BUILD_PARSER "Build ${PROJECT_NAME} parser application" TRUE )
+if( BUILD_PARSER )
+  add_subdirectory( parser )
+endif()
 
 # Documentation
-add_subdirectory (doc)
+option( BUILD_DOC "Build ${PROJECT_NAME} documentation" TRUE )
+if( BUILD_DOC )
+  add_subdirectory ( doc )
+endif()
 
 # Unit tests
-add_subdirectory (unit-test)
+option( BUILD_TESTS "Build ${PROJECT_NAME} tests" FALSE )
+if( BUILD_TESTS )  
+  add_subdirectory ( unit-test )
+endif()
+
+#
+# Packaging
+#
+
+if( UNIX )
+    set(CPACK_GENERATOR "DEB;RPM;TGZ")
+endif()
+
+# Enable component packaging for package generators that do not have this as
+# default, but supports it.
+set( CPACK_RPM_COMPONENT_INSTALL ON )
+set( CPACK_DEB_COMPONENT_INSTALL ON )
+set( CPACK_TBZ2_COMPONENT_INSTALL ON )
+set( CPACK_TGZ_COMPONENT_INSTALL ON )
+set( CPACK_TXZ_COMPONENT_INSTALL ON )
+set( CPACK_TZ_COMPONENT_INSTALL ON )
+
+# One package per component
+set( CPACK_COMPONENTS_IGNORE_GROUPS 1 )
+
+set( CPACK_COMPONENT_lib${PROJECT_NAME}_DESCRIPTION "Libraries and headers for ${PROJECT_NAME}" )
+
+set( CPACK_PACKAGE_CONTACT "Mats G. Liljegren" )
+
+include( CPack )
 

@@ -135,7 +135,7 @@ exhale_args = {
   "doxygenStripFromPath":  "{{ reporoot }}",
   "createTreeView":        True,
   "exhaleExecutesDoxygen": True,
-  "exhaleDoxygenStdin":    "INPUT = {{ reporoot }}/src"
+  "exhaleDoxygenStdin":    "INPUT = {{ reporoot }}/lib"
 }
 
 primary_domain = 'cpp'
