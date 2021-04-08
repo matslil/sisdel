@@ -2,15 +2,7 @@
 
 on:
   push:
-    paths:
-    - 'src/**'
-    - 'conanfile.txt'
-    - 'profile-*.txt'
   pull_request:
-    paths:
-    - 'src/**'
-    - 'conanfile.txt'
-    - 'profile-*.txt'
 env:
   CONAN_USER_HOME: ${{ github.workspace }}
 jobs:
@@ -32,7 +24,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ${{ env.CONAN_USER_HOME }}
-        key: conan-cache-${{ runner.os }}-${{ hashFiles("conanfile.txt;profile-${{ runner.os }}.txt") }}
+        key: "conan-cache-${{ runner.os }}-${{ hashFiles(conanfile.txt;profile-${{ runner.os }}.txt) }}"
     - id: conan
       name: Install Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
@@ -40,7 +32,7 @@ jobs:
     - id: conan-libs
       name: Install libraries with Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
-      needs: conan
+      usess: conan
       run: conan install --profile profile-${{ runner.os }}.txt conanfile.txt
 
   build:
