@@ -37,7 +37,7 @@ jobs:
     - id: conan-libs
       name: Install libraries with Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
-      run: conan install --profile profile-${{ runner.os }}.txt conanfile.txt
+      run: conan install --profile profile-${{ runner.os }}.txt --build missing conanfile.txt
       working-directory: 'src'
 
   build:
