@@ -27,6 +27,21 @@ project (sisdel
 include( GNUInstallDirs )
 include( CMakePackageConfigHelpers )
 
+option( USE_CLANG_TIDY "Run clang-tidy static checked while compiling" ON )
+if( USE_CLANG_TIDY )
+    set( CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,performance-*,cert-* )
+endif()
+
+option( USE_IWYU "Run include-what-you-use checker" ON )
+if( USE_IWYU )
+    set( CMAKE_CXX_INCLUDE_WHAT_YOU_USE iwyu )
+endif()
+
+option( USE_LWYU "Run link what you use checked" ON )
+if( USE_LWYU )
+    set( CMAKE_CXX_LINK_WHAT_YOU_USE TRUE )
+endif()
+
 # Create "test" build target, used by unit-test subdirectory
 enable_testing()
 set(CTEST_OUTPUT_ON_FAILURE ON)
