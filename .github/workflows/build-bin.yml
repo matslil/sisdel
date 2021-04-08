@@ -18,6 +18,11 @@ jobs:
     - id: cmake
       name: Install CMake
       uses: lukka/get-cmake@latest
+    - id: checkout
+      name: Check out repository
+      uses: actions/checkout@v2
+      with:
+        path: 'src'
 
     - id: conan-cache
       name: Use cached libraries built by Conan
@@ -33,6 +38,7 @@ jobs:
       name: Install libraries with Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
       run: conan install --profile profile-${{ runner.os }}.txt conanfile.txt
+      working-directory: 'src'
 
   build:
     needs: setup
@@ -44,11 +50,6 @@ jobs:
         - windows-latest
         - macos-latest
     steps:
-    - id: checkout
-      name: Check out repository
-      uses: actions/checkout@v2
-      with:
-        path: 'src'
 
     - id: mkdir
       name: Create build directory
