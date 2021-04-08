@@ -15,34 +15,35 @@ jobs:
         - ubuntu-20.04
         - windows-latest
         - macos-latest
+    outputs:
+      finished: ${{ matrix.os }}
     steps:
     - id: cmake
-      name: Install CMake
+      name: install CMake
       uses: lukka/get-cmake@latest
     - id: checkout
-      name: Check out repository
+      name: check out repository
       uses: actions/checkout@v2
       with:
         path: 'src'
 
     - id: conan-cache
-      name: Use cached libraries built by Conan
+      name: use cached libraries built by Conan
       uses: actions/cache@v2
       with:
         path: ${{ env.CONAN_USER_HOME }}
         key: "conan-cache-${{ runner.os }}-${{ hashFiles('conanfile.txt;profile-${{ runner.os }}.txt') }}"
     - id: conan
-      name: Install Conan
+      name: install Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
       uses: turtlebrowser/get-conan@main
     - id: conan-libs
-      name: Install libraries with Conan
+      name: install libraries with Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
       run: conan install --profile profile-${{ runner.os }}.txt --build missing conanfile.txt
       working-directory: 'src'
 
   build:
-    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -51,8 +52,11 @@ jobs:
         - ubuntu-20.04
         - windows-latest
         - macos-latest
+    needs: setup
+    if: ${{ needs.setup.finished == ${{ matrix.os }} }}
+    outputs:
+      finished: ${{ matrix.os }}
     steps:
-
     - id: mkdir
       name: Create build directory
       run: cmake -E make_directory build
