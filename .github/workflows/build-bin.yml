@@ -50,13 +50,12 @@ jobs:
         - ubuntu-20.04
         - windows-latest
         - macos-latest
-    outputs:
-      finished: ${{ matrix.os }}
     steps:
     - id: mkdir
       name: Create build directory
       run: cmake -E make_directory build
-
+    - id: ls
+      run: ls -AR
     - id: config
       name: Configure CMake
       run: cmake -G "Ninja Multi-Config" ../src
