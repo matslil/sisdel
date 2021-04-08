@@ -53,7 +53,7 @@ jobs:
         - windows-latest
         - macos-latest
     needs: setup
-    if: ${{ needs.setup.finished == ${{ matrix.os }} }}
+    if: ${{ needs.setup.outputs.finished }} == ${{ matrix.os }}
     outputs:
       finished: ${{ matrix.os }}
     steps:
