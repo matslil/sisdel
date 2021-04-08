@@ -36,8 +36,10 @@ jobs:
       working-directory: 'src'
     - id: mkdir-build
       run: cmake -E make_directory build
+    - id: ls-AR-1
+      run: ls -AR
     - id: config
-      run: cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="${CONAN_USER_HOME}/conan_paths.cmake" ../src
+      run: cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="${CONAN_USER_HOME}/.conan/conan_paths.cmake" ../src
       working-directory: build
     - id: build-release
       run: cmake --build . --config Release
@@ -54,6 +56,6 @@ jobs:
     - id: package-debug
       run: cmake --build . --target package --config Debug
       working-directory: build
-    - id: ls-AR
+    - id: ls-AR-2
       run: ls -AR
 
