@@ -6,7 +6,7 @@ on:
 env:
   CONAN_USER_HOME: ${{ github.workspace }}
 jobs:
-  setup:
+  test:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -17,41 +17,43 @@ jobs:
         - macos-latest
     steps:
     - id: cmake
-      name: install CMake
       uses: lukka/get-cmake@latest
     - id: checkout
-      name: check out repository
       uses: actions/checkout@v2
       with:
         path: 'src'
     - id: conan-cache
-      name: use cached libraries built by Conan
       uses: actions/cache@v2
       with:
         path: ${{ env.CONAN_USER_HOME }}
         key: "conan-cache-${{ runner.os }}-${{ hashFiles('conanfile.txt;profile-${{ runner.os }}.txt') }}"
     - id: conan
-      name: install Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
       uses: turtlebrowser/get-conan@main
     - id: conan-libs
-      name: install libraries with Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
       run: conan install --profile profile-${{ runner.os }}.txt --build missing conanfile.txt
       working-directory: 'src'
-    - id: mkdir
-      name: Create build directory
+    - id: mkdir-build
       run: cmake -E make_directory build
     - id: config
-      name: Configure CMake
-      run: cmake -G "Ninja Multi-Config" ../src
+      run: cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="${CONAN_USER_HOME}/conan_paths.cmake" ../src
       working-directory: build
     - id: build-release
-      name: Build release library
       run: cmake --build . --config Release
       working-directory: build
     - id: build-debug
-      name: Build debug library
       run: cmake --build . --config Debug
       working-directory: build
+    - id: unit-test
+      run: ctest
+      working-directory: build
+    - id: package-release
+      run: cmake --build . --target package --config Release
+      working-directory: build
+    - id: package-debug
+      run: cmake --build . --target package --config Debug
+      working-directory: build
+    - id: ls-AR
+      run: ls -AR
 
