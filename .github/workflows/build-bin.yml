@@ -5,6 +5,8 @@ on:
   pull_request:
 env:
   CONAN_USER_HOME: "${{ github.workspace }}/conan"
+  SRCROOT: "${{ github.workspace }}/src"
+  BUILDROOT: "${{ github.workspace }}/build"
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -21,11 +23,11 @@ jobs:
     - id: checkout
       uses: actions/checkout@v2
       with:
-        path: 'src'
+        path: '${{ env.SRCROOT }}'
     - id: conan-cache
       uses: actions/cache@v2
       with:
-        path: ${{ env.CONAN_USER_HOME }}
+        path: '${{ env.CONAN_USER_HOME }}'
         key: "conan-cache-${{ runner.os }}-${{ hashFiles('conanfile.txt', 'profile-${{ runner.os }}.txt') }}"
     - id: conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
@@ -33,32 +35,33 @@ jobs:
     - id: conan-libs
       if: steps.conan-cache.outputs.cache-hit != 'true'
       run: conan install --profile profile-${{ runner.os }}.txt --build missing conanfile.txt
-      working-directory: 'src'
+      working-directory: '${{ env.CONAN_USER_HOME }}'
     - id: mkdir-build
       run: cmake -E make_directory build
     - id: ls-AR-1
       run: ls -AR
     - id: config
-      run: cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="${CONAN_USER_HOME}/conan/conan_paths.cmake" ../src
-      working-directory: build
+      run: cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="${CONAN_USER_HOME}/conan_paths.cmake" ../src
+      working-directory: '${{ env.BUILDROOT }}'
     - id: build-release
       run: cmake --build . --config Release
-      working-directory: build
+      working-directory: '${{ env.BUILDROOT }}'
     - id: build-debug
       run: cmake --build . --config Debug
-      working-directory: build
+      working-directory: '${{ env.BUILDROOT }}'
+
     - id: build-doc
       run: cmake --build . --target doc
-      working-directory: build
+      working-directory: '${{ env.BUILDROOT }}'
     - id: unit-test
       run: ctest
-      working-directory: build
+      working-directory: '${{ env.BUILDROOT }}'
     - id: package-release
       run: cmake --build . --target package --config Release
-      working-directory: build
+      working-directory: '${{ env.BUILDROOT }}'
     - id: package-debug
       run: cmake --build . --target package --config Debug
-      working-directory: build
+      working-directory: '${{ env.BUILDROOT }}'
     - id: ls-AR-2
       run: ls -AR
 
