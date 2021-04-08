@@ -1,6 +1,6 @@
 [settings]
-os=Linux
-os_build=Linux
+os=MacOS
+os_build=MacOS
 arch=x86_64
 arch_build=x86_64
 compiler=clang
