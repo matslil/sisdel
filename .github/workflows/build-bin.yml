@@ -32,7 +32,6 @@ jobs:
     - id: conan-libs
       name: Install libraries with Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
-      usess: conan
       run: conan install --profile profile-${{ runner.os }}.txt conanfile.txt
 
   build:
@@ -56,20 +55,14 @@ jobs:
       run: cmake -E make_directory build
 
     - id: config
-      needs:
-      - cmake
-      - conan-libs
-      - mkdir
       name: Configure CMake
       run: cmake -G "Ninja Multi-Config" ../src
       working_directory: build
     - id: build-release
-      needs: config
       name: Build release library
       run: cmake --build . --config Release
       working_directory: build
     - id: build-debug
-      needs: config
       name: Build debug library
       run: cmake --build . --config Debug
       working_directory: build
