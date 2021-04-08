@@ -28,13 +28,13 @@ jobs:
       uses: actions/cache@v2
       with:
         path: '${{ env.CONAN_USER_HOME }}'
-        key: "conan-cache-${{ runner.os }}-${{ hashFiles('conanfile.txt', 'profile-${{ runner.os }}.txt') }}"
+        key: "conan-cache-${{ runner.os }}-${{ hashFiles('${{ env.SRCROOT }}/conanfile.txt', '${{ env.SRCROOT}/profile-${{ runner.os }}.txt') }}"
     - id: conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
       uses: turtlebrowser/get-conan@main
     - id: conan-libs
       if: steps.conan-cache.outputs.cache-hit != 'true'
-      run: conan install --profile profile-${{ runner.os }}.txt --build missing conanfile.txt
+      run: conan install --profile "${{ env.SRCROOT}/profile-${{ runner.os }}.txt" --build missing "${{ env.SRCROOT }}/conanfile.txt"
       working-directory: '${{ env.CONAN_USER_HOME }}'
     - id: mkdir-build
       run: cmake -E make_directory build
