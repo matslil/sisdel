@@ -57,15 +57,15 @@ jobs:
     - id: config
       name: Configure CMake
       run: cmake -G "Ninja Multi-Config" ../src
-      working_directory: build
+      working-directory: build
     - id: build-release
       name: Build release library
       run: cmake --build . --config Release
-      working_directory: build
+      working-directory: build
     - id: build-debug
       name: Build debug library
       run: cmake --build . --config Debug
-      working_directory: build
+      working-directory: build
 
   analyze:
     needs: setup
