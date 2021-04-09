@@ -64,6 +64,9 @@ jobs:
       with:
         path: '${{ env.CONAN_USER_HOME }}'
         key: "conan-cache-${{ runner.os }}-${{ hashFiles('${{ env.SRCROOT }}/conanfile.txt', '${{ env.SRCROOT}/profile-${{ runner.os }}.txt') }}"
+    - id: python-modules
+      name: install Python modules
+      run: python -m pip conan sphinx breathe sphinx-rtd-theme exhale
     - id: mkdir-build
       name: create build directory
       run: cmake -E make_directory build
