@@ -34,7 +34,7 @@ jobs:
       uses: turtlebrowser/get-conan@main
     - id: conan-libs
       if: steps.conan-cache.outputs.cache-hit != 'true'
-      run: conan install --profile "${{ env.SRCROOT}/profile-${{ runner.os }}.txt" --build missing "${{ env.SRCROOT }}/conanfile.txt"
+      run: conan install --profile "${{ env.SRCROOT}}/profile-${{ runner.os }}.txt" --build missing "${{ env.SRCROOT }}/conanfile.txt"
       working-directory: '${{ env.CONAN_USER_HOME }}'
     - id: mkdir-build
       run: cmake -E make_directory build
