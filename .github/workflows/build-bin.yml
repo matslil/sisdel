@@ -5,8 +5,6 @@ on:
   pull_request:
 env:
   CONAN_USER_HOME: "${{ github.workspace }}/conan"
-  SRCROOT: "${{ github.workspace }}/src"
-  BUILDROOT: "${{ github.workspace }}/build"
 jobs:
   setup-conan-libs:
     name: setup Conan libraries
@@ -23,7 +21,7 @@ jobs:
       name: checkout source
       uses: actions/checkout@v2
       with:
-        path: '${{ env.SRCROOT }}'
+        path: 'src'
     - id: conan-cache
       name: recall/setup Conan cache
       uses: actions/cache@v2
@@ -31,7 +29,7 @@ jobs:
         path: |
           ${{ env.CONAN_USER_HOME }}/*.cmake
           ${{ env.CONAN_USER_HOME }}/**/package/**
-        key: "conan-cache-2-${{ runner.os }}-${{ hashFiles('${{ env.SRCROOT }}/conanfile.txt', '${{ env.SRCROOT}/profile-${{ runner.os }}.txt') }}"
+        key: "conan-cache-2-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: conan
       name: install Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
@@ -39,8 +37,7 @@ jobs:
     - id: conan-build
       name: build dependencies with Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
-      run: conan install --profile "${{ env.SRCROOT}}/profile-${{ runner.os }}.txt" --build missing "${{ env.SRCROOT }}/conanfile.txt"
-      working-directory: '${{ env.CONAN_USER_HOME }}'
+      run: conan install --profile "src/profile-${{ runner.os }}.txt" --build missing "src/conanfile.txt" --install-folder conan
 
   build:
     needs: setup-conan-libs
@@ -57,13 +54,13 @@ jobs:
       name: checkout source
       uses: actions/checkout@v2
       with:
-        path: '${{ env.SRCROOT }}'
+        path: 'src'
     - id: conan-cache
       name: recall cached dependencies
       uses: actions/cache@v2
       with:
         path: '${{ env.CONAN_USER_HOME }}'
-        key: "conan-cache-${{ runner.os }}-${{ hashFiles('${{ env.SRCROOT }}/conanfile.txt', '${{ env.SRCROOT}/profile-${{ runner.os }}.txt') }}"
+        key: "conan-cache-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: python-setup
       name: ensure Python is new enough
       uses: actions/setup-python@v2
@@ -84,32 +81,32 @@ jobs:
     - id: config
       name: configure build
       run: cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="${{ env.CONAN_USER_HOME }}/conan_paths.cmake" ../src
-      working-directory: '${{ env.BUILDROOT }}'
+      working-directory: 'build'
     - id: build-release
       name: build release
       run: cmake --build . --config Release
-      working-directory: '${{ env.BUILDROOT }}'
+      working-directory: 'build'
     - id: build-debug
       name: build debug
       run: cmake --build . --config Debug
-      working-directory: '${{ env.BUILDROOT }}'
+      working-directory: 'build'
 
     - id: build-doc
       name: build documentation
       run: cmake --build . --target doc
-      working-directory: '${{ env.BUILDROOT }}'
+      working-directory: 'build'
     - id: unit-test
       name: run tests
       run: ctest
-      working-directory: '${{ env.BUILDROOT }}'
+      working-directory: 'build'
     - id: package-release
       name: package release
       run: cmake --build . --target package --config Release
-      working-directory: '${{ env.BUILDROOT }}'
+      working-directory: 'build'
     - id: package-debug
       name: package debug
       run: cmake --build . --target package --config Debug
-      working-directory: '${{ env.BUILDROOT }}'
+      working-directory: 'build'
     - id: ls-AR-2
       run: ls -AR
 
