@@ -17,7 +17,7 @@
 
 cmake_minimum_required (VERSION 3.14)
 
-option( DISABLE_WERROR "Do not make warnings fail the build" FALSE )
+option( DISABLE_WERROR "Do not make warnings fail the build" TRUE )
 option( USE_COVERAGE "Build with code coverage support" FALSE )
 
 set(CMAKE_CONFIGURATION_TYPES "Release;Debug" CACHE STRING "Build type selections" FORCE)

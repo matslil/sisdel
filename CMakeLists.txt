@@ -32,7 +32,7 @@ if( USE_CLANG_TIDY )
     set( CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,performance-*,cert-* )
 endif()
 
-option( USE_IWYU "Run include-what-you-use checker" ON )
+option( USE_IWYU "Run include-what-you-use checker" OFF )
 if( USE_IWYU )
     set( CMAKE_CXX_INCLUDE_WHAT_YOU_USE iwyu )
 endif()
