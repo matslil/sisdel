@@ -28,8 +28,10 @@ jobs:
       name: recall/setup Conan cache
       uses: actions/cache@v2
       with:
-        path: '${{ env.CONAN_USER_HOME }}'
-        key: "conan-cache-${{ runner.os }}-${{ hashFiles('${{ env.SRCROOT }}/conanfile.txt', '${{ env.SRCROOT}/profile-${{ runner.os }}.txt') }}"
+        path: |
+          ${{ env.CONAN_USER_HOME }}/*.cmake
+          ${{ env.CONAN_USER_HOME }}/**/package/**
+        key: "conan-cache-2-${{ runner.os }}-${{ hashFiles('${{ env.SRCROOT }}/conanfile.txt', '${{ env.SRCROOT}/profile-${{ runner.os }}.txt') }}"
     - id: conan
       name: install Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
@@ -39,13 +41,6 @@ jobs:
       if: steps.conan-cache.outputs.cache-hit != 'true'
       run: conan install --profile "${{ env.SRCROOT}}/profile-${{ runner.os }}.txt" --build missing "${{ env.SRCROOT }}/conanfile.txt"
       working-directory: '${{ env.CONAN_USER_HOME }}'
-    - id: conan-cleanup
-      name: cleanup Conan build artifacts
-      if: steps.conan-cache.outputs.cache-hit != 'true'
-      run: conan remove --builds --src --force '*'
-      working-directory: '${{ env.CONAN_USER_HOME }}'
-    - id: ls-AR
-      run: ls -AR
 
   build:
     needs: setup-conan-libs
@@ -72,6 +67,9 @@ jobs:
     - id: mkdir-build
       name: create build directory
       run: cmake -E make_directory build
+    - id: cmake
+      name: setup CMake and Ninja
+      uses: lukka/get-cmake@latest
     - id: ls-AR-1
       run: ls -AR
     - id: config
