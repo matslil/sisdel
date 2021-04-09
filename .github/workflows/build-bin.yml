@@ -67,8 +67,8 @@ jobs:
     - id: python-setup
       name: ensure Python is new enough
       uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
+      with:
+        python-version: '3.x'
     - id: python-modules
       name: install Python modules
       run: python -m pip install sphinx breathe sphinx-rtd-theme exhale
