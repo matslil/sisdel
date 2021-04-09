@@ -8,7 +8,8 @@ env:
   SRCROOT: "${{ github.workspace }}/src"
   BUILDROOT: "${{ github.workspace }}/build"
 jobs:
-  test:
+  setup-conan-libs:
+    name: setup Conan libraries
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -18,48 +19,88 @@ jobs:
         - windows-latest
         - macos-latest
     steps:
-    - id: cmake
-      uses: lukka/get-cmake@latest
     - id: checkout
+      name: checkout source
       uses: actions/checkout@v2
       with:
         path: '${{ env.SRCROOT }}'
     - id: conan-cache
+      name: recall/setup Conan cache
       uses: actions/cache@v2
       with:
         path: '${{ env.CONAN_USER_HOME }}'
         key: "conan-cache-${{ runner.os }}-${{ hashFiles('${{ env.SRCROOT }}/conanfile.txt', '${{ env.SRCROOT}/profile-${{ runner.os }}.txt') }}"
     - id: conan
+      name: install Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
       uses: turtlebrowser/get-conan@main
-    - id: conan-libs
+    - id: conan-build
+      name: build dependencies with Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
       run: conan install --profile "${{ env.SRCROOT}}/profile-${{ runner.os }}.txt" --build missing "${{ env.SRCROOT }}/conanfile.txt"
       working-directory: '${{ env.CONAN_USER_HOME }}'
+    - id: conan-cleanup
+      name: cleanup Conan build artifacts
+      if: steps.conan-cache.outputs.cache-hit != 'true'
+      run: conan remove --builds --src --force '*'
+      working-directory: '${{ env.CONAN_USER_HOME }}'
+    - id: ls-AR
+      run: ls -AR
+
+  build:
+    needs: setup-conan-libs
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-20.04
+        - windows-latest
+        - macos-latest
+    steps:
+    - id: checkout
+      name: checkout source
+      uses: actions/checkout@v2
+      with:
+        path: '${{ env.SRCROOT }}'
+    - id: conan-cache
+      name: recall cached dependencies
+      uses: actions/cache@v2
+      with:
+        path: '${{ env.CONAN_USER_HOME }}'
+        key: "conan-cache-${{ runner.os }}-${{ hashFiles('${{ env.SRCROOT }}/conanfile.txt', '${{ env.SRCROOT}/profile-${{ runner.os }}.txt') }}"
     - id: mkdir-build
+      name: create build directory
       run: cmake -E make_directory build
     - id: ls-AR-1
       run: ls -AR
     - id: config
+      name: configure build
       run: cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="${CONAN_USER_HOME}/conan_paths.cmake" ../src
       working-directory: '${{ env.BUILDROOT }}'
     - id: build-release
+      name: build release
       run: cmake --build . --config Release
       working-directory: '${{ env.BUILDROOT }}'
     - id: build-debug
+      name: build debug
       run: cmake --build . --config Debug
       working-directory: '${{ env.BUILDROOT }}'
 
     - id: build-doc
+      name: build documentation
       run: cmake --build . --target doc
       working-directory: '${{ env.BUILDROOT }}'
     - id: unit-test
+      name: run tests
       run: ctest
       working-directory: '${{ env.BUILDROOT }}'
     - id: package-release
+      name: package release
       run: cmake --build . --target package --config Release
       working-directory: '${{ env.BUILDROOT }}'
     - id: package-debug
+      name: package debug
       run: cmake --build . --target package --config Debug
       working-directory: '${{ env.BUILDROOT }}'
     - id: ls-AR-2
