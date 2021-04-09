@@ -64,6 +64,11 @@ jobs:
       with:
         path: '${{ env.CONAN_USER_HOME }}'
         key: "conan-cache-${{ runner.os }}-${{ hashFiles('${{ env.SRCROOT }}/conanfile.txt', '${{ env.SRCROOT}/profile-${{ runner.os }}.txt') }}"
+    - id: python-setup
+      name: ensure Python is new enough
+      uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
     - id: python-modules
       name: install Python modules
       run: python -m pip install sphinx breathe sphinx-rtd-theme exhale
@@ -74,6 +79,7 @@ jobs:
       name: setup CMake and Ninja
       uses: lukka/get-cmake@latest
     - id: ls-AR-1
+      shell: bash
       run: ls -AR
     - id: config
       name: configure build
