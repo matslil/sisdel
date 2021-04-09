@@ -29,12 +29,25 @@ include( CMakePackageConfigHelpers )
 
 option( USE_CLANG_TIDY "Run clang-tidy static checked while compiling" ON )
 if( USE_CLANG_TIDY )
-    set( CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,performance-*,cert-* )
+    if( CMAKE_CXX_COMPILER_VERSION MATCHES "([0-9]*).*" )
+        set( COMPILER_MAJOR_VERSION "${CMAKE_MATCH_0}" )
+    endif()
+    find_program( CLANG_TIDY_EXEC clang "clang-${COMPILER_MAJOR_VERSION}" )
+    if( CLANG_TIDY_EXEC )
+        set( CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXEC} -checks=-*,readability-*,performance-*,cert-* )
+    else()
+        message( WARNING "clang-tidy not found, disabling static code checking using it" )
+    endif()
 endif()
 
-option( USE_IWYU "Run include-what-you-use checker" OFF )
+option( USE_IWYU "Run include-what-you-use checker" ON )
 if( USE_IWYU )
-    set( CMAKE_CXX_INCLUDE_WHAT_YOU_USE iwyu )
+    find_program( IWYU_EXEC iwyu )
+    if( IWYU_EXEC )
+        set( CMAKE_CXX_INCLUDE_WHAT_YOU_USE ${IWYU_EXEC} )
+    else()
+        message( WARNING "iwyu not found, disabling staic code checking using it" )
+    endif()
 endif()
 
 option( USE_LWYU "Run link what you use checked" ON )
@@ -50,7 +63,7 @@ set(CTEST_OUTPUT_ON_FAILURE ON)
 execute_process(
   COMMAND git rev-parse --abbrev-ref HEAD
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE sisdel_GIT_BRANCH
+  OUTPUT_VARIABLE ${CMAKE_PROJECT_NAME}_GIT_BRANCH
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
@@ -58,7 +71,7 @@ execute_process(
 execute_process(
   COMMAND git rev-parse HEAD
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE ${PROJECT_NAME}_GIT_COMMIT_HASH
+  OUTPUT_VARIABLE ${CMAKE_PROJECT_NAME}_GIT_COMMIT_HASH
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
@@ -81,7 +94,7 @@ if( BUILD_DOC )
 endif()
 
 # Unit tests
-option( BUILD_TESTS "Build ${PROJECT_NAME} tests" FALSE )
+option( BUILD_TESTS "Build ${PROJECT_NAME} tests" TRUE )
 if( BUILD_TESTS )  
   add_subdirectory ( unit-test )
 endif()
