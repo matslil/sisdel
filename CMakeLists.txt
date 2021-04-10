@@ -22,7 +22,7 @@ project (sisdel
 	VERSION 0.0.1
 	DESCRIPTION "Generic programming language"
 	HOMEPAGE_URL https://github.com/matslil/sisdel
-	LANGUAGES CXX)
+)
 
 if( DEFINED ENV{CONAN_USER_HOME} )
     list( APPEND CMAKE_MODULE_PATH $ENV{CONAN_USER_HOME} )
@@ -37,9 +37,9 @@ if( USE_CLANG_TIDY )
     if( CMAKE_CXX_COMPILER_VERSION MATCHES "([0-9]*).*" )
         set( COMPILER_MAJOR_VERSION "${CMAKE_MATCH_0}" )
     endif()
-    find_program( CLANG_TIDY_EXEC clang "clang-${COMPILER_MAJOR_VERSION}" )
+    find_program( CLANG_TIDY_EXEC clang-tidy "clang-tidy-${COMPILER_MAJOR_VERSION}" )
     if( CLANG_TIDY_EXEC )
-        set( CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXEC} -checks=-*,readability-*,performance-*,cert-* )
+        set( CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXEC} )
     else()
         message( WARNING "clang-tidy not found, disabling static code checking using it" )
     endif()

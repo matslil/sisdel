@@ -1,7 +1,7 @@
 # Source: https://github.com/k0ekk0ek/cmake-sphinx/blob/master/cmake/Modules/FindSphinx.cmake
 include(FindPackageHandleStandardArgs)
 
-find_package( Python )
+find_program( PYTHON_EXEC python )
 
 macro(_Sphinx_find_executable _exe)
   string(TOUPPER "${_exe}" _uc)
@@ -12,7 +12,7 @@ macro(_Sphinx_find_executable _exe)
     SPHINX_${_uc}_EXECUTABLE
     NAMES "sphinx-${_exe}-3" "sphinx-${_exe}" "sphinx-${_exe}.exe")
 
-  if( Python_FOUND AND SPHINX_${_uc}_EXECUTABLE )
+  if( PYTHON_EXEC AND SPHINX_${_uc}_EXECUTABLE )
     execute_process(
       COMMAND "${SPHINX_${_uc}_EXECUTABLE}" --version
       RESULT_VARIABLE _result
@@ -34,7 +34,7 @@ endmacro()
 
 macro(_Sphinx_find_extension _ext)
   execute_process(
-    COMMAND ${Python_EXECUTABLE} -c "import ${_ext}"
+    COMMAND ${PYTHON_EXEC} -c "import ${_ext}"
     RESULT_VARIABLE _result)
   if(_result EQUAL 0)
     set(Sphinx_${_ext}_FOUND TRUE)
