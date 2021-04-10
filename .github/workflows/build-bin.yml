@@ -29,7 +29,7 @@ jobs:
         path: |
           ${{ env.CONAN_USER_HOME }}/*.cmake
           ${{ env.CONAN_USER_HOME }}/**/package/**
-          ${{ env.CONAN_USER_HOME }}/.conan/
+          ${{ env.CONAN_USER_HOME }}/.conan/[0-9]**
         key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: conan
       name: install Conan
@@ -63,7 +63,12 @@ jobs:
         path: |
           ${{ env.CONAN_USER_HOME }}/*.cmake
           ${{ env.CONAN_USER_HOME }}/**/package/**
+          ${{ env.CONAN_USER_HOME }}/.conan/[0-9]**
         key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
+    - uses: nick-invision@assert-action@v1
+      with:
+        expected: 'true'
+        actual: ${{ steps.conan-cache.outputs.cache-hit }}
     - id: python-setup
       name: ensure Python is new enough
       uses: actions/setup-python@v2
