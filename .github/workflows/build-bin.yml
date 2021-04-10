@@ -29,7 +29,8 @@ jobs:
         path: |
           ${{ env.CONAN_USER_HOME }}/*.cmake
           ${{ env.CONAN_USER_HOME }}/**/package/**
-        key: "conan-cache-2-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
+          ${{ env.CONAN_USER_HOME }}/.conan/
+        key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: conan
       name: install Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
@@ -62,7 +63,7 @@ jobs:
         path: |
           ${{ env.CONAN_USER_HOME }}/*.cmake
           ${{ env.CONAN_USER_HOME }}/**/package/**
-        key: "conan-cache-2-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
+        key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: python-setup
       name: ensure Python is new enough
       uses: actions/setup-python@v2
