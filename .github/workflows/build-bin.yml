@@ -37,7 +37,7 @@ jobs:
       uses: turtlebrowser/get-conan@main
     - id: setup-msbuild
       name: setup Visual Studio paths
-      if: ${{ matrix.os == 'Windows' }}
+      if: matrix.os == 'Windows'
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
     - id: conan-build
@@ -95,12 +95,12 @@ jobs:
       run: ls -AR
     - id: setup-msbuild
       name: setup Visual Studio paths
-      if: ${{ matrix.os == 'Windows' }}
+      if: matrix.os == 'Windows'
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
     - id: setup-cc-cxx
       name: setup CC and CXX environment variables
-      if: ${{ matrix.os == 'Linux' }}
+      if: matrix.os == 'Linux'
       env:
         CC: clang-11
         CXX: clang++-11
