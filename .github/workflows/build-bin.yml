@@ -59,7 +59,8 @@ jobs:
       name: recall cached dependencies
       uses: actions/cache@v2
       with:
-        path: '${{ env.CONAN_USER_HOME }}'
+          ${{ env.CONAN_USER_HOME }}/*.cmake
+          ${{ env.CONAN_USER_HOME }}/**/package/**
         key: "conan-cache-2-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: python-setup
       name: ensure Python is new enough
