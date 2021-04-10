@@ -60,7 +60,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: '${{ env.CONAN_USER_HOME }}'
-        key: "conan-cache-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
+        key: "conan-cache-2-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: python-setup
       name: ensure Python is new enough
       uses: actions/setup-python@v2
