@@ -33,16 +33,16 @@ jobs:
         key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: conan
       name: install Conan
-      if: steps.conan-cache.outputs.cache-hit != 'true'
+      if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
       uses: turtlebrowser/get-conan@main
     - id: setup-msbuild
       name: setup Visual Studio paths
-      if: matrix.os == 'Windows'
+      if: ${{ matrix.os == 'Windows' && steps.conan-cache.outputs.cache-hit != 'true' }}
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
     - id: conan-build
       name: build dependencies with Conan
-      if: steps.conan-cache.outputs.cache-hit != 'true'
+      if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
       run: conan install --profile "src/profile-${{ runner.os }}.txt" --build missing "src/conanfile.txt" --install-folder conan
 
   build:
@@ -95,12 +95,12 @@ jobs:
       run: ls -AR
     - id: setup-msbuild
       name: setup Visual Studio paths
-      if: matrix.os == 'Windows'
+      if: ${{ matrix.os == 'Windows' }}
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
     - id: setup-cc-cxx
       name: setup CC and CXX environment variables
-      if: matrix.os == 'Linux'
+      if: ${{ matrix.os == 'Linux' }}
       env:
         CC: clang-11
         CXX: clang++-11
