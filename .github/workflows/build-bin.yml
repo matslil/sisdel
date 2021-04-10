@@ -102,8 +102,10 @@ jobs:
       env:
         CC: clang-11
         CXX: clang++-11
+      run: cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="${{ env.CONAN_USER_HOME }}/conan_paths.cmake" ../src
     - id: config
       name: configure build
+      if: ${{ matrix.os != 'ubuntu-latest' }}
       run: cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="${{ env.CONAN_USER_HOME }}/conan_paths.cmake" ../src
       working-directory: 'build'
     - id: build-release
