@@ -38,8 +38,7 @@ jobs:
     - id: setup-msbuild
       name: setup Visual Studio paths
       if: ${{ matrix.os == 'windows-latest' && steps.conan-cache.outputs.cache-hit != 'true' }}
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v1.0.2
     - id: conan-build
       name: build dependencies with Conan
       if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
