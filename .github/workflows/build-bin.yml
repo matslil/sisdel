@@ -67,7 +67,7 @@ jobs:
         key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: assert-conan-cache
       name: assert Conan cache was recalled
-      uses: nick-invision@assert-action@v1
+      uses: nick-invision/assert-action@v1.1.0
       with:
         expected: 'true'
         actual: ${{ steps.conan-cache.outputs.cache-hit }}
