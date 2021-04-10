@@ -37,7 +37,7 @@ jobs:
       uses: turtlebrowser/get-conan@main
     - id: setup-msbuild
       name: setup Visual Studio paths
-      if: ${{ matrix.os == 'Windows' && steps.conan-cache.outputs.cache-hit != 'true' }}
+      if: ${{ matrix.os == 'windows-latest' && steps.conan-cache.outputs.cache-hit != 'true' }}
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
     - id: conan-build
@@ -52,7 +52,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-        - ubuntu-20.04
+        - ubuntu-latest
         - windows-latest
         - macos-latest
     steps:
@@ -95,12 +95,12 @@ jobs:
       run: ls -AR
     - id: setup-msbuild
       name: setup Visual Studio paths
-      if: ${{ matrix.os == 'Windows' }}
+      if: ${{ matrix.os == 'windows-latest' }}
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
     - id: setup-cc-cxx
       name: setup CC and CXX environment variables
-      if: ${{ matrix.os == 'Linux' }}
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       env:
         CC: clang-11
         CXX: clang++-11
