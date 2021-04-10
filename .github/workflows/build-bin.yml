@@ -29,12 +29,17 @@ jobs:
         path: |
           ${{ env.CONAN_USER_HOME }}/*.cmake
           ${{ env.CONAN_USER_HOME }}/**/package/**
-          ${{ env.CONAN_USER_HOME }}/.conan/[0-9]**
+          ${{ env.CONAN_USER_HOME }}/.conan/[0-9]*/**
         key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: conan
       name: install Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
       uses: turtlebrowser/get-conan@main
+    - id: setup-msbuild
+      name: setup Visual Studio paths
+      if: ${{ matrix.os == 'Windows' }}
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
     - id: conan-build
       name: build dependencies with Conan
       if: steps.conan-cache.outputs.cache-hit != 'true'
@@ -63,7 +68,7 @@ jobs:
         path: |
           ${{ env.CONAN_USER_HOME }}/*.cmake
           ${{ env.CONAN_USER_HOME }}/**/package/**
-          ${{ env.CONAN_USER_HOME }}/.conan/[0-9]**
+          ${{ env.CONAN_USER_HOME }}/.conan/[0-9]*/**
         key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: assert-conan-cache
       name: assert Conan cache was recalled
@@ -88,6 +93,17 @@ jobs:
     - id: ls-AR-1
       shell: bash
       run: ls -AR
+    - id: setup-msbuild
+      name: setup Visual Studio paths
+      if: ${{ matrix.os == 'Windows' }}
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
+    - id: setup-cc-cxx
+      name: setup CC and CXX environment variables
+      if: ${{ matrix.os == 'Linux' }}
+      env:
+        CC: clang-11
+        CXX: clang++-11
     - id: config
       name: configure build
       run: cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="${{ env.CONAN_USER_HOME }}/conan_paths.cmake" ../src

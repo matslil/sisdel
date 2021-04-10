@@ -24,6 +24,11 @@ project (sisdel
 	HOMEPAGE_URL https://github.com/matslil/sisdel
 	LANGUAGES CXX)
 
+if( DEFINED ENV{CONAN_USER_HOME} )
+    list( APPEND CMAKE_MODULE_PATH $ENV{CONAN_USER_HOME} )
+    list( APPEND CMAKE_PREFIX_PATH $ENV{CONAN_USER_HOME} )
+endif()
+
 include( GNUInstallDirs )
 include( CMakePackageConfigHelpers )
 
