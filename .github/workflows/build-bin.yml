@@ -26,11 +26,8 @@ jobs:
       name: recall/setup Conan cache
       uses: actions/cache@v2
       with:
-        path: |
-          ${{ env.CONAN_USER_HOME }}/*.cmake
-          ${{ env.CONAN_USER_HOME }}/**/package/**
-          ${{ env.CONAN_USER_HOME }}/.conan/[0-9]*/**
-        key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
+        path: ${{ env.CONAN_USER_HOME }}/**
+        key: "conan-cache-4-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: conan
       name: install Conan
       if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
@@ -43,6 +40,10 @@ jobs:
       name: build dependencies with Conan
       if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
       run: conan install --profile "src/profile-${{ runner.os }}.txt" --build missing "src/conanfile.txt" --install-folder conan
+    - id: conan-cleanup
+      name: cleanup unneeded build artifacts
+      if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
+      run: conan remove --force --locks --src --system-reqs '*'
 
   build-binaries:
     needs: setup-conan-libs
@@ -64,11 +65,8 @@ jobs:
       name: recall cached dependencies
       uses: actions/cache@v2
       with:
-        path: |
-          ${{ env.CONAN_USER_HOME }}/*.cmake
-          ${{ env.CONAN_USER_HOME }}/**/package/**
-          ${{ env.CONAN_USER_HOME }}/.conan/[0-9]*/**
-        key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
+        path: ${{ env.CONAN_USER_HOME }}/**
+        key: "conan-cache-4-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: assert-conan-cache
       name: assert Conan cache was recalled
       uses: nick-invision/assert-action@v1.1.0
@@ -114,6 +112,7 @@ jobs:
       run: |
           cmake --build . --config Release --target packages
           cmake --build . --config Debug   --target packages
+      working-directory: 'build'
 
   build-docs:
     needs: setup-conan-libs
@@ -154,6 +153,9 @@ jobs:
       name: macos install doxygen
       if: ${{ matrix.os == 'macos-latest' }}
       run: brew install doxygen graphviz
+    - id: mkdir-build
+      name: create build directory
+      run: cmake -E make_directory build
     - id: configure-cmake
       name: run CMake configure
       if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -166,4 +168,5 @@ jobs:
     - id: build-packages
       name: build documentation packages
       run: cmake --build . --component doc --target packages
+      working-directory: 'build'
 
