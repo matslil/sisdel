@@ -17,11 +17,42 @@
 
 cmake_minimum_required (VERSION 3.1)
 
+option( BUILD_LIB "Build ${PROJECT_NAME} library" ON )
+option( BUILD_PARSER "Build ${PROJECT_NAME} parser application" ON )
+option( BUILD_DOC "Build ${PROJECT_NAME} documentation" ON )
+
+if( BUILD_LIB )
+    option( BUILD_TESTS "Build ${PROJECT_NAME} tests" OFF )
+else()
+    option( BUILD_TESTS "Build ${PROJECT_NAME} tests" NO )
+endif()
+    
+if( BUILD_LIB OR BUILD_PARSER OR BUILD_TESTS )
+    set( COMPILER_LANGUAGES C CXX )
+    option( USE_CLANG_TIDY "Run clang-tidy static checked while compiling" ON )
+    option( USE_IWYU "Run include-what-you-use checker" ON )
+    option( USE_LWYU "Run link what you use checked" ON )
+else()
+    set( COMPILER_LANGUAGES NONE )
+    option( USE_CLANG_TIDY "Run clang-tidy static checked while compiling" OFF )
+    option( USE_IWYU "Run include-what-you-use checker" OFF )
+    option( USE_LWYU "Run link what you use checked" OFF )
+endif()
+
+message( STATUS "BUILD_LIB: ${BUILD_LIB}" )
+message( STATUS "BUILD_PARSER: ${BUILD_PARSER}" )
+message( STATUS "BUILD_DOC: ${BUILD_DOC}" )
+message( STATUS "BUILD_TESTS: ${BUILD_TESTS}" )
+message( STATUS "USE_CLANG_TIDY: ${USE_CLANG_TIDY}" )
+message( STATUS "USE_IWYU: ${USE_IWYU}" )
+message( STATUS "USE_LWYU: ${USE_LWYU}" )
+
 # Name the project
 project (sisdel
 	VERSION 0.0.1
 	DESCRIPTION "Generic programming language"
 	HOMEPAGE_URL https://github.com/matslil/sisdel
+	LANGUAGES ${COMPILER_LANGUAGES}
 )
 
 if( DEFINED ENV{CONAN_USER_HOME} )
@@ -32,7 +63,6 @@ endif()
 include( GNUInstallDirs )
 include( CMakePackageConfigHelpers )
 
-option( USE_CLANG_TIDY "Run clang-tidy static checked while compiling" ON )
 if( USE_CLANG_TIDY )
     if( CMAKE_CXX_COMPILER_VERSION MATCHES "([0-9]*).*" )
         set( COMPILER_MAJOR_VERSION "${CMAKE_MATCH_0}" )
@@ -45,7 +75,6 @@ if( USE_CLANG_TIDY )
     endif()
 endif()
 
-option( USE_IWYU "Run include-what-you-use checker" ON )
 if( USE_IWYU )
     find_program( IWYU_EXEC iwyu )
     if( IWYU_EXEC )
@@ -55,7 +84,6 @@ if( USE_IWYU )
     endif()
 endif()
 
-option( USE_LWYU "Run link what you use checked" ON )
 if( USE_LWYU )
     set( CMAKE_CXX_LINK_WHAT_YOU_USE TRUE )
 endif()
@@ -81,25 +109,21 @@ execute_process(
 )
 
 # Library
-option( BUILD_LIB "Build ${PROJECT_NAME} library" TRUE )
 if( BUILD_LIB )
   add_subdirectory ( lib )
 endif()
 
 # Parser application
-option( BUILD_PARSER "Build ${PROJECT_NAME} parser application" TRUE )
 if( BUILD_PARSER )
   add_subdirectory( parser )
 endif()
 
 # Documentation
-option( BUILD_DOC "Build ${PROJECT_NAME} documentation" TRUE )
 if( BUILD_DOC )
   add_subdirectory ( doc )
 endif()
 
 # Unit tests
-option( BUILD_TESTS "Build ${PROJECT_NAME} tests" TRUE )
 if( BUILD_TESTS )  
   add_subdirectory ( unit-test )
 endif()
