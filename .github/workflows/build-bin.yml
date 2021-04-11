@@ -27,7 +27,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ${{ env.CONAN_USER_HOME }}/**
-        key: "conan-cache-4-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
+        key: "conan-cache-5-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: conan
       name: install Conan
       if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
@@ -39,11 +39,13 @@ jobs:
     - id: conan-build
       name: build dependencies with Conan
       if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
-      run: conan install --profile "src/profile-${{ runner.os }}.txt" --build missing "src/conanfile.txt" --install-folder conan
+      run: conan install --profile "src/profile-${{ runner.os }}.txt" --build missing "src/conanfile.txt" --install-folder "${{ env.CONAN_USER_HOME }}"
+    - run: ls -AR
     - id: conan-cleanup
       name: cleanup unneeded build artifacts
       if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
       run: conan remove --force --src --system-reqs '*'
+    - run: ls -AR
 
   build-binaries:
     needs: setup-conan-libs
@@ -66,7 +68,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ${{ env.CONAN_USER_HOME }}/**
-        key: "conan-cache-4-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
+        key: "conan-cache-5-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
     - id: assert-conan-cache
       name: assert Conan cache was recalled
       uses: nick-invision/assert-action@v1.1.0
@@ -116,9 +118,9 @@ jobs:
     - id: upload-artifacts
       name: upload artifacts
       uses: actions/upload-artifact@v2
-        with:
-          name: my-artifact
-          path: build/sisdel-*
+      with:
+        name: my-artifact
+        path: build/sisdel-*
 
   build-docs:
     needs: setup-conan-libs
@@ -177,7 +179,7 @@ jobs:
     - id: upload-artifacts
       name: upload artifacts
       uses: actions/upload-artifact@v2
-        with:
-          name: my-artifact
-          path: build/sisdel-*
+      with:
+        name: my-artifact
+        path: build/sisdel-*
 
