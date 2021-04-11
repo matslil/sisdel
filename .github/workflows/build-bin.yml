@@ -44,7 +44,7 @@ jobs:
       if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
       run: conan install --profile "src/profile-${{ runner.os }}.txt" --build missing "src/conanfile.txt" --install-folder conan
 
-  build:
+  build-binaries:
     needs: setup-conan-libs
     runs-on: ${{ matrix.os }}
     strategy:
@@ -75,14 +75,6 @@ jobs:
       with:
         expected: 'true'
         actual: ${{ steps.conan-cache.outputs.cache-hit }}
-    - id: python-setup
-      name: ensure Python is new enough
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-    - id: python-modules
-      name: install Python modules
-      run: python -m pip install sphinx breathe sphinx-rtd-theme exhale
     - id: mkdir-build
       name: create build directory
       run: cmake -E make_directory build
@@ -117,23 +109,55 @@ jobs:
       name: build debug
       run: cmake --build . --config Debug
       working-directory: 'build'
+    - id: build-packages
+      name: build packages
+      run: |
+          cmake --build . --config Release --target packages
+          cmake --build . --config Debug   --target packages
 
+  build-docs:
+    needs: setup-conan-libs
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - windows-latest
+        - macos-latest
+    steps:
+    - id: checkout
+      name: checkout source
+      uses: actions/checkout@v2
+      with:
+        path: 'src'
+    - id: python-setup
+      name: ensure Python is new enough
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - id: python-modules
+      name: install Python modules
+      run: python -m pip install sphinx breathe sphinx-rtd-theme exhale
+    - id: install-doxygen-ubuntu
+      if: ${{ matrix.os == "ubuntu-latest" }}
+      run: sudo apt-get install -y --install-suggests doxygen
+    - id: install-doxygen-windows
+      if: ${{ matrix.os == "windows-latest" }}
+      run: choco install doxygen.install graphviz
+    - id: install-doxygen-macos
+      if: ${{ matrix.os == "macos-latest" }}
+      run: brew install doxygen graphviz
+    - id: configure-cmake
+      name: run CMake configure
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: cmake -G "Ninja" -DBUILD_LIB:BOOL=NO -DBUILD_PARSER:BOOL=NO ../src
+      working-directory: 'build'
     - id: build-doc
       name: build documentation
       run: cmake --build . --target doc
       working-directory: 'build'
-    - id: unit-test
-      name: run tests
-      run: ctest
-      working-directory: 'build'
-    - id: package-release
-      name: package release
-      run: cmake --build . --target package --config Release
-      working-directory: 'build'
-    - id: package-debug
-      name: package debug
-      run: cmake --build . --target package --config Debug
-      working-directory: 'build'
-    - id: ls-AR-2
-      run: ls -AR
+    - id: build-packages
+      name: build documentation packages
+      run: cmake --build . --component doc --target packages
 
