@@ -49,6 +49,7 @@ jobs:
 
   version-info:
     name: get version information
+    runs-on: 'ubuntu-latest'
     outputs:
       branchName: ${{ steps.gitversion.outputs.branchName }}
       semVer: ${{ steps.gitversion.outputs.semVer }}
