@@ -110,9 +110,15 @@ jobs:
     - id: build-packages
       name: build packages
       run: |
-          cmake --build . --config Release --target packages
-          cmake --build . --config Debug   --target packages
+          cmake --build . --config Release --target package
+          cmake --build . --config Debug   --target package
       working-directory: 'build'
+    - id: upload-artifacts
+      name: upload artifacts
+      uses: actions/upload-artifact@v2
+        with:
+          name: my-artifact
+          path: build/sisdel-*
 
   build-docs:
     needs: setup-conan-libs
@@ -144,7 +150,7 @@ jobs:
     - id: install-doxygen-ubuntu
       name: ubuntu install doxygen
       if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: sudo apt-get install -y --install-suggests doxygen
+      run: sudo apt-get install -y doxygen graphviz
     - id: install-doxygen-windows
       name: windows install doxygen
       if: ${{ matrix.os == 'windows-latest' }}
@@ -158,7 +164,6 @@ jobs:
       run: cmake -E make_directory build
     - id: configure-cmake
       name: run CMake configure
-      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: cmake -G "Ninja" -DBUILD_LIB:BOOL=NO -DBUILD_PARSER:BOOL=NO ../src
       working-directory: 'build'
     - id: build-doc
@@ -167,6 +172,12 @@ jobs:
       working-directory: 'build'
     - id: build-packages
       name: build documentation packages
-      run: cmake --build . --component doc --target packages
+      run: cmake --build . --component doc --target package
       working-directory: 'build'
+    - id: upload-artifacts
+      name: upload artifacts
+      uses: actions/upload-artifact@v2
+        with:
+          name: my-artifact
+          path: build/sisdel-*
 
