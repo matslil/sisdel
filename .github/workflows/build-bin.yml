@@ -17,11 +17,6 @@ jobs:
         - windows-latest
         - macos-latest
     steps:
-    - id: checkout
-      name: checkout source
-      uses: actions/checkout@v2
-      with:
-        path: 'src'
     - id: conan-cache
       name: recall/setup Conan cache
       uses: actions/cache@v2
@@ -31,6 +26,12 @@ jobs:
           ${{ env.CONAN_USER_HOME }}/**/package/**
           ${{ env.CONAN_USER_HOME }}/.conan/[0-9]*/**
         key: "conan-cache-3-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
+    - id: checkout
+      name: checkout source
+      if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
+      uses: actions/checkout@v2
+      with:
+        path: 'src'
     - id: conan
       name: install Conan
       if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
@@ -94,12 +95,12 @@ jobs:
       env:
         CC: clang-11
         CXX: clang++-11
-      run: cmake -G "Ninja Multi-Config" ../src
+      run: cmake -G "Ninja Multi-Config" -DBUILD_DOC:BOOL=NO ../src
       working-directory: 'build'
     - id: config
       name: configure build
       if: ${{ matrix.os != 'ubuntu-latest' }}
-      run: cmake -G "Ninja Multi-Config" ../src
+      run: cmake -G "Ninja Multi-Config" -DBUILD_DOC:BOOL=NO ../src
       working-directory: 'build'
     - id: build-release
       name: build release
@@ -131,6 +132,9 @@ jobs:
       uses: actions/checkout@v2
       with:
         path: 'src'
+    - id: cmake
+      name: setup CMake and Ninja
+      uses: lukka/get-cmake@latest
     - id: python-setup
       name: ensure Python is new enough
       uses: actions/setup-python@v2
@@ -140,12 +144,15 @@ jobs:
       name: install Python modules
       run: python -m pip install sphinx breathe sphinx-rtd-theme exhale
     - id: install-doxygen-ubuntu
+      name: ubuntu only: install doxygen
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: sudo apt-get install -y --install-suggests doxygen
     - id: install-doxygen-windows
+      name: windows only: install doxygen
       if: ${{ matrix.os == 'windows-latest' }}
       run: choco install doxygen.install graphviz
     - id: install-doxygen-macos
+      name: macos only: install doxygen
       if: ${{ matrix.os == 'macos-latest' }}
       run: brew install doxygen graphviz
     - id: configure-cmake
