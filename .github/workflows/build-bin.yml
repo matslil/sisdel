@@ -47,8 +47,29 @@ jobs:
       run: conan remove --force --src --system-reqs '*'
     - run: ls -AR
 
+  version-info:
+    name: get version information
+    outputs:
+      branchName: ${{ steps.gitversion.outputs.branchName }}
+      semVer: ${{ steps.gitversion.outputs.semVer }}
+    steps:
+    - id: checkout
+      name: checkout source
+      uses: actions/checkout@v2
+      with:
+        path: 'src'
+        depth: 0
+    - id: gitversion
+      name: determine version
+      uses: gittools/actions/gitversion/execute@v0.9.9
+      with:
+        useConfigFile: true
+      working-directory: src
+
   build-binaries:
-    needs: setup-conan-libs
+    needs:
+    - setup-conan-libs
+    - version-info
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -57,6 +78,8 @@ jobs:
         - ubuntu-latest
         - windows-latest
         - macos-latest
+    env:
+      GITVERSION_SEMVER: '${{ needs.version-info.outputs.semVer }}'
     steps:
     - id: checkout
       name: checkout source
@@ -123,7 +146,9 @@ jobs:
         path: build/sisdel-*
 
   build-docs:
-    needs: setup-conan-libs
+    needs:
+    - setup-conan-libs
+    - version-info
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -132,6 +157,8 @@ jobs:
         - ubuntu-latest
         - windows-latest
         - macos-latest
+    env:
+      GITVERSION_SEMVER: '${{ needs.version-info.outputs.semVer }}'
     steps:
     - id: checkout
       name: checkout source
