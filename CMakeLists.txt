@@ -49,7 +49,7 @@ message( STATUS "USE_LWYU: ${USE_LWYU}" )
 
 # Name the project
 project (sisdel
-	VERSION $env{GITVERSION_SEMVER}
+	VERSION $ENV{GITVERSION_SEMVER}
 	DESCRIPTION "Generic programming language"
 	HOMEPAGE_URL https://github.com/matslil/sisdel
 	LANGUAGES ${COMPILER_LANGUAGES}
