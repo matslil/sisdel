@@ -60,6 +60,10 @@ jobs:
       with:
         path: 'src'
         fetch-depth: 0
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0.9.9
+      with:
+        versionSpec: '5.x'
     - id: gitversion
       name: determine version
       uses: gittools/actions/gitversion/execute@v0.9.9
