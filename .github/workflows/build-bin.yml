@@ -43,7 +43,7 @@ jobs:
     - id: conan-cleanup
       name: cleanup unneeded build artifacts
       if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
-      run: conan remove --force --locks --src --system-reqs '*'
+      run: conan remove --force --src --system-reqs '*'
 
   build-binaries:
     needs: setup-conan-libs
