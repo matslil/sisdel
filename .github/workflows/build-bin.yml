@@ -14,7 +14,7 @@ jobs:
       matrix:
         os:
         - ubuntu-20.04
-        - windows-latest
+          # - windows-latest # Some include files ends up in D:\.conan for some reason, making package Boost broken
         - macos-latest
     steps:
     - id: checkout
@@ -83,7 +83,7 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
-        - windows-latest
+          # - windows-latest # Conan does not build correctly for Windows
         - macos-latest
     env:
       GITVERSION_SEMVER: '${{ needs.version-info.outputs.semVer }}'
@@ -151,7 +151,7 @@ jobs:
       with:
         name: sisdel-binaries
         path: build/sisdel-*
-        if-no-files-found: err
+        if-no-files-found: error
 
   build-docs:
     needs:
@@ -163,7 +163,7 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
-        - windows-latest
+          # - windows-latest # exhale cannot handle mixed backslash and slash in Windows paths correctly
         - macos-latest
     env:
       GITVERSION_SEMVER: '${{ needs.version-info.outputs.semVer }}'
@@ -217,5 +217,5 @@ jobs:
       with:
         name: sisdel-documentation
         path: build/sisdel-*
-        if-no-files-found: err
+        if-no-files-found: error
 
