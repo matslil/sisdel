@@ -39,7 +39,7 @@ jobs:
     - id: conan-build
       name: build dependencies with Conan
       if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
-      run: conan install --profile "src/profile-${{ runner.os }}.txt" --build missing "src/conanfile.txt"
+      run: conan install --profile "../src/profile-${{ runner.os }}.txt" --build missing "../src/conanfile.txt"
       working-directory: "${{ env.CONAN_USER_HOME }}"
     - run: ls -AR
     - id: conan-cleanup
