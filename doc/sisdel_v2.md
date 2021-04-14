@@ -4,11 +4,10 @@
 License
 =======
 
-![CC-BY-4.0](CC-BY-license-88x31.png "Creative Commons 4.0 International License")
-SPDX-License-Identifier: CC-BY-4.0
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+SPDX-License-Identifier: MIT
 
-This work is licensed under a Creative Commons Attribution 4.0 International
-License. See <http://creativecommons.org/licenses/by/4.0/> for license text.
+See LICENSE file in the same directory as this file for full license text.
 
 Entity
 ======
