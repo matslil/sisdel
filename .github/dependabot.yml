@@ -1,0 +1,22 @@
+# Service provided by GitHub to detect new versions of dependencies
+# If a new version is detected, PR is created by Dependabot
+
+version: 2
+updates:
+    - package-ecosystem: "github-actions"
+      directory: "/" # Relative to .github/workflows
+      schedule:
+          interval: "weekly"
+      commit-message:
+          prefix: "[fix] github-actions: "
+          include: "scope"
+
+    - package-ecosystem: "pip"
+      directory: "/" # Relative to repository root, where to find requirements.txt
+      schedule:
+          interval: "weekly"
+      commit-message:
+          prefix: "[fix] pip: "
+          include: "scope"
+      insecure-external-code-execution: allow
+

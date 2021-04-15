@@ -1,15 +1,23 @@
-# Set the default behavior
+# Auto-detect text files, make them use lf only
 * text=auto eol=lf
+
+# Windows command/batch files needs cr and lf
 *.{cmd,[cC][mM][dD]} text eol=crlf
 *.{bat,[bB][aA][tT]} text eol=crlf
 
 # Explicitly declare text files to always be normalized and converted to native line endings on checkout
 *.cpp text
+*.cc text
+*.cxx text
+*.c text
 *.h text
+*.hh text
+*.hpp text
 *.py text
 *.txt text
 *.md text
 *.yml text
+*.rst text
 
 # Denote all files that are truly binary and should not be modified
 *.png binary
