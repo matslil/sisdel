@@ -6,6 +6,26 @@ on:
 env:
   CONAN_USER_HOME: "${{ github.workspace }}/conan"
 jobs:
+  lint:
+    name: lint
+    runs-os: ubuntu-latest
+    steps:
+    - id: checkout
+      name: checkout source
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - id: super-lint
+      name: super-lint
+      uses: github/super-linter@v3
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - id: c-lint
+      name: c-linter
+      uses: ArtificialAmateur/cpp-linter-action@0.01
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   setup-conan-libs:
     name: setup Conan libraries
     runs-on: ${{ matrix.os }}
