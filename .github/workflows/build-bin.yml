@@ -20,6 +20,7 @@ jobs:
       uses: github/super-linter@v3
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VALIDATE_SHELL_SHFMT: false
     - id: c-lint
       name: c-linter
       uses: ArtificialAmateur/cpp-linter-action@0.01
@@ -89,6 +90,10 @@ jobs:
       with:
         path: 'src'
         fetch-depth: 0
+    - uses: actions/setup-setup-dotnet@v1
+    - uses: actions/setup-gitversion@v1.0.1
+      with:
+        gitversion-version: 5.1.1
     - id: gitversion
       name: determine version
       uses: gittools/actions/gitversion/execute@v0.9.9
