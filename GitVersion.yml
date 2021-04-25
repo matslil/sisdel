@@ -21,7 +21,7 @@ branches:
     prevent-increment-of-merged-branch-version: false
     tag-number-pattern: '[/-](?<number>\d+)[-/]'
     track-merge-target: false
-    tracks-release-branch: false
+    tracks-release-branches: false
     is-release-branch: false
   feature:
     regex: ^features?[/-]
