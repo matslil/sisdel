@@ -224,10 +224,13 @@ Container
 Some types provided by Sisdel built on fundamental types:
 
 List
-   Ordered set, i.e. set wiith element sortable.
+   Ordered set.
 
 String
    List of characters.
+
+Stream
+   Serial list.
 
 Constraints
 ~~~~~~~~~~~
@@ -255,13 +258,14 @@ Size
    Size can be finite or infinite, which makes distinct types. In order to use infinite container where a finite is expected, you must specify how much of the inifite container to use.
    Size can be set compile time or at execution time.
 
-Stream
+Serial
    Applies to: Any.
    Whether reads/writes to and from the container matters. For example, if using a map and do reads and writes to different elements in the map, those reads and writes will be performed in the exact order as issued. This is useful when describing interactions going outside of the Sisdel domain, for example when accessing hardware registers or using remote protocols.
 
-Sortable
+Ordered
    Applies to: Any.
-   Whether this object supports comparison operator.
+   This constraint is set implicitly on any object that has an <=> operator.
+   Can be set explicitly on objects without <=> operator, in which case the order will be defined by the order elements are inserted.
 
 Element
    Applies to: Container.
@@ -287,6 +291,50 @@ Representation
 ~~~~~~~~~~~~~~
 
 Representation describes how the value is stored, e.g. number of bits used, endian, data format. It can for example be used to say that a map is stored as Yaml. If a specific representation is requested, and the value has another representation, this triggers a conversion. This is an operator run on the original representation whose return value need to be of the expected representation. If no such conversion has been defined, this becomes a type incompatibility error.
+
+- Storage size in bits or bytes
+- Encoding (e.g. IEEE 754, UCS-2, UTF-32, ... How to handle home-made formats?)
+- Memory address location
+
+Using the language
+------------------
+
+Working with hardware
+~~~~~~~~~~~~~~~~~~~~~
+
+If your hardware defines a register with 32 individual bits, where reading and/or writing to them causes side effects, you could define it like the following:
+
+reg is list as
+    stream                 # says access order to the stream matters
+    ordered                # ordered list becomes array
+    element boolean        # each value can only have values true or false
+    element storage-size 1 as bits # each element only occupies one bit of storage space
+    size 32                # number of elements in array
+    address hex 8000'fe00  # memory address mapped for this array
+
+How to make sure individual bits are accessed as they should would depend on hardware description used for the Sisdel compilation. For architectures support addressing individual bits this will be used, others might support reading the register, modify the bits being affected, and write the result back, and yet others might need a shadow register to avoid having to read current value.
+
+Describing sequences
+~~~~~~~~~~~~~~~~~~~~
+
+Examples of where sequences can be useful would include describing data encoding, message API or pattern matching.
+
+Example::
+
+    my-sequence is list unsigned #( message version )# ( unsigned as nr-entries ) list string as ( size nr-entries )
+
+This defines a type of name my-sequence that starts with an unsigned number, which an inline comment explains is the version number, followed by another unsigned number which is associated with the name nr-entries, followed by a list of strings, where the size of the list is determined by nr-entries.
+
+If this is to be used to define a message format to be used externally, this needs to be serialized, or encoded, into a format suitable to be transmitted. It then needs to be deserialized, or decoded, to an object Sisdel understands.
+
+One common encoding format used for configuration files and REST HTTP APIs is YAML. The Sisdel yaml type can be map (object in YAML), list, integer or string. These can be combined. Since my-sequence above fits this, YAML code be used like this::
+
+    message as my-sequence is ( 1 , 2 , '(Hello)' , '(world)' )
+    print message as yaml
+
+This would print the following::
+
+    [1,2,['Hello','world']]
 
 Type compatibility
 ~~~~~~~~~~~~~~~~~~
@@ -496,17 +544,67 @@ This is guaranteed to be evaluated in this order::
 Built-in operators
 ------------------
 
+Conditional
+~~~~~~~~~~~
+
 BOOLEAN then EXPRESSION
    Works like an if statement. If BOOLEAN is true, then EXPRESSION is executed and value of EXPRESSION is returned. Otherwise, nil is returned.
 
 BOOLEAN else EXPRESSION
    Works like an if-else statement. If BOOLEAN is false, then EXPRESSION is executed and value of EXPRESION is returned. Otherwise, nil is returned.
 
+Assignment
+~~~~~~~~~~
+
 IDENTIFIER is ANY
    Define a new identifier IDENTIFIER to be associated with ANY.
 
 ANY as CONSTRAINT
    Puts CONSTRAINT on ANY.
+
+operator EXPRESSION
+   Defines an anonymous operator which evaluates EXPRESSION. The special variable arg is defined in the scope of EXPRESSION containing the argument to the operator.
+
+unsigned is ( number as ( 0 .. nil ) )
+
+Arithmetic operators
+~~~~~~~~~~~~~~~~~~~~
+
+NUMBER + NUMBER
+   Arithmetic addition of two numbers.
+
+NUMBER - NUMBER
+   Arithmetic subtraction of two numbers.
+
+NUMBER * NUMBER
+   Arithmetic multiplication of two numbers.
+
+NUMBER / NUMBER
+   Arithmetic division of two numbers.
+
+NUMBER % NUMBER
+   Remainder if left-hand side is divided with right-hand side.
+
+NUMBER ^ NUMBER
+   Left-hand side raised to right-hand side.
+
+Bit-wise operators
+~~~~~~~~~~~~~~~~~~
+
+UNSIGNED & UNSIGNED
+   Bit-wise and operation.
+
+UNSIGNED | UNSIGNED
+   Bit-wise or operation.
+
+UNSIGNED || UNSIGNED
+   Bitwise xor operation.
+
+~ UNSINGED
+   Bit-wise negate operation.
+
+Container operators
+~~~~~~~~~~~~~~~~~~~
 
 VALUE select LIST
    Each element of LIST is "OPERATOR VALUE then EXPRESSION", where first VALUE is used as left-hand side of OPERATOR.
@@ -519,11 +617,6 @@ VALUE select LIST
        = '(eva)'  then print '(female)'
        otherwise print '(unknown sex)'
 
-operator EXPRESSION
-   Defines an anonymous operator which evaluates EXPRESSION. The special variable arg is defined in the scope of EXPRESSION containing the argument to the operator.
-
-unsigned is ( number as ( 0 .. nil ) )
-
 first LIST
    Returns first item in LIST.
 
@@ -533,29 +626,20 @@ last LIST
 LIST zip LIST
    Returns map with left-hand side as list of keywords and right-hand side as a list of values to be associated with the keywords. Both lists need to be of same size.
 
-NUMBER + NUMBER
-   Arithmetic addition of two numbers.
-
 CONTAINER + CONTAINER
    Appends two containers. If any CONTAINER is ordered, the returned container will also be ordered. This is the union operator.
 
-NUMBER - NUMBER
-   Arithmetic subtraction of two numbers.
-
 CONTAINER - CONTAINER
    Removes occurences of right-hand side in left-hand side, and returns the result. For map, keys occuring on the right-hand side will be removed from the left hand side.
-
-NUMBER * NUMBER
-   Arithmetic multiplication of two numbers.
-
-SET * UNSIGNED
-   Repeat CONTAINER UNSIGNED number of times.
 
 CONTAINER disjoint CONTAINER
    Returns true if the two sets have no element in common. For map this means no common key.
 
 CONTAINER intersect CONTAINER
    Returns elements common to both CONTAINERS. For map, this returns key value pairs where key occurs in both maps.
+
+SET repeat UNSIGNED
+   Repeat CONTAINER UNSIGNED number of times.
 
 first CONTAINER
    Returns first element of CONTAINER. This requires the container to be ordered (sortable).
