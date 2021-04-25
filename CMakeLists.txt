@@ -44,7 +44,7 @@ function( get_version )
         RESULT_VARIABLE GITVERSION_RESULT
         )
 
-    if( RESULT_VARIABLE NOT EQUAL "0" )
+    if( NOT RESULT_VARIABLE EQUAL "0" )
         message( FATAL "${GITVERSION_EXECUTABLE}: Execution failed with the following output: ${GITVERSION_JSON}" )
     endif()
 
