@@ -1,7 +1,7 @@
 mode: Mainline
 major-version-bump-message: '\[breaking\]'
 minor-version-bump-message: '\[feature\]'
-path-version-bump-message:  '\[fix\]'
+patch-version-bump-message: '\[fix\]'
 no-bump-message: '\[none\]'
 
 branches:
