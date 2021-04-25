@@ -73,6 +73,7 @@ jobs:
     name: binary packages
     needs:
     - setup-conan-libs
+    - version-info
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -81,26 +82,12 @@ jobs:
         - ubuntu-latest
           # - windows-latest # Conan does not build correctly for Windows
         - macos-latest
-    env:
-      GITVERSION_SEMVER: '${{ needs.version-info.outputs.semVer }}'
     steps:
     - id: checkout
       name: checkout source
       uses: actions/checkout@v2
       with:
         path: 'src'
-        fetch-depth: 0
-    - uses: actions/setup-setup-dotnet@v1
-    - uses: actions/setup-gitversion@v1.0.1
-      with:
-        gitversion-version: 5.1.1
-    - id: gitversion
-      name: determine version
-      uses: gittools/actions/gitversion/execute@v0.9.9
-      with:
-        useConfigFile: true
-        configFilePath: 'src/GitVersion.yml'
-        targetPath: 'src'
     - id: conan-cache
       name: recall cached dependencies
       uses: actions/cache@v2
@@ -113,6 +100,10 @@ jobs:
       with:
         expected: 'true'
         actual: ${{ steps.conan-cache.outputs.cache-hit }}
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0.9.9
+      with:
+        versionSpec: '5.x'
     - id: mkdir-build
       name: create build directory
       run: cmake -E make_directory build
@@ -182,13 +173,10 @@ jobs:
       with:
         path: 'src'
         fetch-depth: 0
-    - id: gitversion
-      name: determine version
-      uses: gittools/actions/gitversion/execute@v0.9.9
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0.9.9
       with:
-        useConfigFile: true
-        configFilePath: 'src/GitVersion.yml'
-        targetPath: 'src'
+        versionSpec: '5.x'
     - id: cmake
       name: setup CMake and Ninja
       uses: lukka/get-cmake@latest
