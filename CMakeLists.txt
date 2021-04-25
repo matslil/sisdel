@@ -44,8 +44,8 @@ function( get_version )
         RESULT_VARIABLE GITVERSION_RESULT
         )
 
-    if( NOT RESULT_VARIABLE EQUAL "0" )
-        message( FATAL "${GITVERSION_EXECUTABLE}: Execution failed with the following output: ${GITVERSION_JSON}" )
+    if( NOT RESULT_VARIABLE STREQUAL "0" )
+        message( FATAL "${GITVERSION_EXECUTABLE}: Return value ${GITVERSION_RESULT}: Execution failed with the following output: ${GITVERSION_JSON}" )
     endif()
 
     string( JSON VER GET "${GITVERSION_JSON}" FullSemVer )
