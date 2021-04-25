@@ -11,7 +11,7 @@ if( BUILD_LIB )
 else()
     option( BUILD_TESTS "Build ${PROJECT_NAME} tests" NO )
 endif()
-    
+
 if( BUILD_LIB OR BUILD_PARSER OR BUILD_TESTS )
     set( COMPILER_LANGUAGES C CXX )
     option( USE_CLANG_TIDY "Run clang-tidy static checked while compiling" ON )
@@ -34,7 +34,7 @@ message( STATUS "USE_LWYU: ${USE_LWYU}" )
 
 # Read version information from git log using gitversion tool
 
-find_program( GITVERSION_EXECUTABLE gitversion REQUIRED )
+find_program( GITVERSION_EXECUTABLE gitversion dotnet-gitversion REQUIRED )
 execute_process(
     COMMAND ${GITVERSION_EXECUTABLE}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -106,7 +106,7 @@ if( BUILD_DOC )
 endif()
 
 # Unit tests
-if( BUILD_TESTS )  
+if( BUILD_TESTS )
   add_subdirectory ( unit-test )
 endif()
 
