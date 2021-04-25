@@ -73,7 +73,6 @@ jobs:
     name: binary packages
     needs:
     - setup-conan-libs
-    - version-info
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -164,8 +163,6 @@ jobs:
         - ubuntu-latest
           # - windows-latest # exhale cannot handle mixed backslash and slash in Windows paths correctly
         - macos-latest
-    env:
-      GITVERSION_SEMVER: '${{ needs.version-info.outputs.semVer }}'
     steps:
     - id: checkout
       name: checkout source
