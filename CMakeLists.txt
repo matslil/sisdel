@@ -34,16 +34,29 @@ message( STATUS "USE_LWYU: ${USE_LWYU}" )
 
 # Read version information from git log using gitversion tool
 
-find_program( GITVERSION_EXECUTABLE gitversion dotnet-gitversion REQUIRED )
-execute_process(
-    COMMAND ${GITVERSION_EXECUTABLE}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GITVERSION_JSON
-    COMMAND_ERROR_IS_FATAL ANY
-)
-string( JSON VER GET "${GITVERSION_JSON}" FullSemVer )
-string( JSON BRANCH GET "${GITVERSION_JSON}" BranchName )
-string( JSON COMMIT GET "${GITVERSION_JSON}" Sha )
+function( get_version )
+    find_program( GITVERSION_EXECUTABLE gitversion dotnet-gitversion REQUIRED )
+    execute_process(
+        COMMAND ${GITVERSION_EXECUTABLE}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GITVERSION_JSON
+        ERROR_VARIABLE GITVERSION_JSON
+        RESULT_VARIABLE GITVERSION_RESULT
+        )
+
+    if( RESULT_VARIABLE NOT EQUAL "0" )
+        message( FATAL "${GITVERSION_EXECUTABLE}: Execution failed with the following output: ${GITVERSION_JSON}" )
+    endif()
+
+    string( JSON VER GET "${GITVERSION_JSON}" FullSemVer )
+    string( JSON BRANCH GET "${GITVERSION_JSON}" BranchName )
+    string( JSON COMMIT GET "${GITVERSION_JSON}" Sha )
+    set( VER ${VER} PARENT )
+    set( BRANCH ${BRANCH} PARENT )
+    set( COMMIT ${COMMIT} PARENT )
+endfunction()
+
+get_version()
 
 # Name the project
 project (sisdel
