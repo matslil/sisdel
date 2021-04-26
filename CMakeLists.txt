@@ -37,7 +37,7 @@ message( STATUS "USE_LWYU: ${USE_LWYU}" )
 function( get_version )
     find_program( GITVERSION_EXECUTABLE gitversion dotnet-gitversion REQUIRED )
     execute_process(
-        COMMAND ${GITVERSION_EXECUTABLE} -nocache -verbosity Diagnose
+        COMMAND ${GITVERSION_EXECUTABLE} -nocache -verbosity Diagnostic
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         OUTPUT_VARIABLE GITVERSION_JSON
         ERROR_VARIABLE GITVERSION_STDERR
