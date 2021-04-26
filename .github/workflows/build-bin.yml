@@ -6,26 +6,26 @@ on:
 env:
   CONAN_USER_HOME: "${{ github.workspace }}/conan"
 jobs:
-  lint:
-    name: lint
-    runs-on: ubuntu-latest
-    steps:
-    - id: checkout
-      name: checkout source
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - id: super-lint
-      name: super-lint
-      uses: github/super-linter@v3
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        VALIDATE_SHELL_SHFMT: false
-    - id: c-lint
-      name: c-linter
-      uses: ArtificialAmateur/cpp-linter-action@0.01
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#  lint:
+#    name: lint
+#    runs-on: ubuntu-latest
+#    steps:
+#    - id: checkout
+#      name: checkout source
+#      uses: actions/checkout@v2
+#      with:
+#        fetch-depth: 0
+#    - id: super-lint
+#      name: super-lint
+#      uses: github/super-linter@v3
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        VALIDATE_SHELL_SHFMT: false
+#    - id: c-lint
+#      name: c-linter
+#      uses: ArtificialAmateur/cpp-linter-action@0.01
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   setup-conan-libs:
     name: setup Conan libraries
@@ -36,7 +36,7 @@ jobs:
         os:
         - ubuntu-20.04
           # - windows-latest # Some include files ends up in D:\.conan for some reason, making package Boost broken
-        - macos-latest
+#        - macos-latest
     steps:
     - id: checkout
       name: checkout source
@@ -80,7 +80,7 @@ jobs:
         os:
         - ubuntu-latest
           # - windows-latest # Conan does not build correctly for Windows
-        - macos-latest
+#        - macos-latest
     steps:
     - id: checkout
       name: checkout source
@@ -162,7 +162,7 @@ jobs:
         os:
         - ubuntu-latest
           # - windows-latest # exhale cannot handle mixed backslash and slash in Windows paths correctly
-        - macos-latest
+#        - macos-latest
     steps:
     - id: checkout
       name: checkout source
