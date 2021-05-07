@@ -1,0 +1,13 @@
+name: 'builder'
+author: 'Sisdel Development Team'
+description: 'Toolchain for building Sisdel'
+inputs:
+    cmdline:
+        description: 'Command to be executed by toolchain'
+        default: ''
+        required: true
+
+runs:
+    using: 'docker'
+    image: 'Dockerfile'
+

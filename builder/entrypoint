@@ -1,3 +1,7 @@
 #!/bin/bash
-. /venv/bin/activate && "$@"
+if [[ -n ${INPUT_CMDLINE:-} ]]; then
+    . /venv/bin/activate && ${INPUT_CMDLINE}
+else
+    . /venv/bin/activate && "$@"
+fi
 
