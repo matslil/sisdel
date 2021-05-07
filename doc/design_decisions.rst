@@ -2,6 +2,11 @@
 Design Decisions
 ================
 
+.. uml::
+
+   Alice -> Bob: Hi!
+   Alice <- Bob: How are you?
+
 
 This document tries to answer the question why the language is designed the way it is.
 
@@ -271,6 +276,11 @@ Element
    Applies to: Container.
    Type constraint applied to every element within the container.
 
+Duplicates
+   Applies to: Container.
+   Allow container to have several occurrences of the same object, or in the case of map, for the same key. For ordered containers these entries will be kept in insert order.
+   The default behavior for sets is to ignore duplicates, i.e. attempt to insert an already existing element will simply be ignored. For maps, attempts to insert for the same key will result in the value being replaced with the new value given.
+
 Compatibility
    Applies to: All.
    Type constraint applied to the object to ensure this object is always type compatible with the given object.
@@ -459,6 +469,9 @@ equal
 greater
    Comparison value representing sorts greater than.
 
+_
+   Underscore represents a space character. Useful when building strings with spaces in them.
+
 Scope
 -----
 
@@ -501,45 +514,32 @@ TYPE ANY
 Set
 ---
 
-If a set is given as a argument (right-hand side) when no operator exists accepting a container type, and the return type is allowed to be a set, then operator will be invoked repeatably, once for each item in the argument set.
+Set can be given in code in two different ways. Either using , character, like::
 
-For example, imagine removing a key from a map. The operator is declared as::
+    my_set is ( 1 , 2 , 3 )
 
-    MAP - ANY
+Or, using indented lines::
 
-where ANY is expected to be a single key for MAP. If map is a string to number map, like::
+    my_list is
+        1
+        2
+        3
 
-    mymap is map ( '(first)' is 1 , '(second)' is 2, '(third)' is 3 )
+These two gives identical results.
 
-To remove the last two items from mymap::
+When using an operator that normally do not expect its right-hand argument to be a set, but is given a set, it will be applied repeatedly and return a list of result. Like::
 
-    mymap - ( '(second)' , '(third)' )
+    sum_set is 2 + ( 1 , 2 , 3 )
 
-?? How to get mymap every ( 2 , 3 ) to select every 2nd and 3rd element of mymap?
+will set sum_set to value ( 3 , 4 , 5 ). This can be used generically, e.g.::
 
-This translates to::
+    fun_list is 100
+        > 50 then '( large )'
+        = 50 then '( medium )'
+        < 50 then '( small )'
+        & 1 = 0 then '( even )'
 
-    ( mymap - '(second)' ) - '(third)'
-
-For the same operator but with numbers::
-
-    50 - ( 5 , 10 , 20 )
-
-this translates to:
-
-    ( ( 50 - 5 ) - 10 ) - 20
-
-Note that if the set is not ordered, there is no guarantee which order this calculation will be done. So above might also translate to::
-
-    ( ( 50 - 10 ) - 20 ) - 5
-
-But using::
-
-    50 - list ( 5 , 10 , 20 )
-
-This is guaranteed to be evaluated in this order::
-
-    50 - ( 5 , 10 , 20 )
+will set fun_list to ( '( largs )' , '( even )' )
 
 Built-in operators
 ------------------

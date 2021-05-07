@@ -1,7 +1,7 @@
-pip
-Sphinx
-breathe
-sphinx_rtd_theme
-exhale
 conan
+sphinx
+breathe
+sphinx-rtd-theme
+exhale
+sphinxcontrib-plantuml
 

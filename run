@@ -8,27 +8,20 @@ readonly gid=$(id -g)
 
 export srcroot buildroot uid gid
 
-cmd=( . /venv/bin/activate '&&' )
-
 case "$1" in
-    compose) ( cd "${srcroot}" && docker-compose build ); exit $?;;
-    config)  cmd+=( cmake -G "'Ninja Multi-Config'" -DCMAKE_TOOLCHAIN_FILE="\${CONAN_USER_HOME}/conan_paths.cmake" "${srcroot}" )
-	     ;;
-    release) cmd+=( cmake --build . --config Release )
-             ;;
-    debug)   cmd+=( cmake --build . --config Debug )
-             ;;
-    build)   cmd+=( cmake --build . )
-             ;;
-    doc)     cmd+=( cmake --build . --target doc )
-             ;;
-    install) cmd+=( cmake --install . )
-             ;;
-    *)       printf '%s: Unknown command, must be one of: config build'; exit 1;;
+    compose) ( cd "${srcroot}" && docker-compose build ) && exit 0;;
+    config)  cmd=( cmake -G "Ninja Multi-Config" "${srcroot}" );;
+    release) cmd=( cmake --build . --config Release );;
+    debug)   cmd=( cmake --build . --config Debug );;
+    build)   cmd=( cmake --build . );;
+    doc)     cmd=( cmake --build . --target doc );;
+    install) cmd=( cmake --install . );;
+    custom)  cmd=( );;
+    *)       printf '%s: Unknown command, must be one of: compose config build release debug doc install'; exit 1;;
 esac
 shift
 
 (( $# == 0 )) || cmd+=( "$@" )
 
-( cd "${srcroot}" && docker-compose run do bash -c "${cmd[*]}" )
+( cd "${srcroot}" && docker-compose run builder "${cmd[@]}" )
 

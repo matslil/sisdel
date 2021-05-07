@@ -6,7 +6,7 @@ set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Modules" )
 
 set( SPHINX_TEMPLATEDIR "${CMAKE_CURRENT_SOURCE_DIR}/templates" )
 
-find_package( Sphinx COMPONENTS breathe exhale sphinx_rtd_theme REQUIRED )
+find_package( Sphinx COMPONENTS breathe exhale sphinx_rtd_theme sphinxcontrib.plantuml REQUIRED )
 
 sphinx_add_docs(
     doc

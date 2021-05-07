@@ -142,3 +142,9 @@ primary_domain = 'cpp'
 
 highlight_language = 'cpp'
 {%- endif %}
+
+# -- Options for plantuml extension --------------------------------------------
+{%- if 'sphinxcontrib.plantuml' in extensions %}
+plantuml = 'java -Djava.awt.headless=true -jar /usr/local/bin/plantuml.jar'
+{%- endif %}
+

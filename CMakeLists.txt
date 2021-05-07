@@ -35,7 +35,7 @@ message( STATUS "USE_LWYU: ${USE_LWYU}" )
 # Read version information from git log using gitversion tool
 
 function( get_version )
-    find_program( GITVERSION_EXECUTABLE gitversion dotnet-gitversion REQUIRED )
+    find_program( GITVERSION_EXECUTABLE NAMES gitversion dotnet-gitversion REQUIRED )
     execute_process(
         COMMAND ${GITVERSION_EXECUTABLE} -nocache -verbosity Diagnostic
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -45,15 +45,15 @@ function( get_version )
         )
 
     if( NOT GITVERSION_RESULT EQUAL 0 )
-        message( FATAL "${GITVERSION_EXECUTABLE}: Return value ${GITVERSION_RESULT}: Execution failed with the following output: ${GITVERSION_STDERR}${GITVERSION_JSON}" )
+        message( FATAL_ERROR "${GITVERSION_EXECUTABLE}: Return value ${GITVERSION_RESULT}: Execution failed with the following output: ${GITVERSION_STDERR}${GITVERSION_JSON}" )
     endif()
 
-    string( JSON VER GET "${GITVERSION_JSON}" FullSemVer )
+    string( JSON VER GET "${GITVERSION_JSON}" MajorMinorPatch )
     string( JSON BRANCH GET "${GITVERSION_JSON}" BranchName )
     string( JSON COMMIT GET "${GITVERSION_JSON}" Sha )
-    set( VER ${VER} PARENT )
-    set( BRANCH ${BRANCH} PARENT )
-    set( COMMIT ${COMMIT} PARENT )
+    set( VER ${VER} PARENT_SCOPE )
+    set( BRANCH ${BRANCH} PARENT_SCOPE )
+    set( COMMIT ${COMMIT} PARENT_SCOPE )
     message( STATUS "Version: ${VER}" )
     message( STATUS "Branch.: ${BRANCH}" )
     message( STATUS "Commit.: ${COMMIT}" )
