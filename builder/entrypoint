@@ -1,7 +1,11 @@
-#!/bin/bash
+#!/bin/bash -eu
 if [[ -n ${INPUT_CMDLINE:-} ]]; then
-    . /venv/bin/activate && ${INPUT_CMDLINE}
+    . /venv/bin/activate
+    set -x
+    ${INPUT_CMDLINE}
 else
-    . /venv/bin/activate && "$@"
+    . /venv/bin/activate
+    set -x
+    "$@"
 fi
 
