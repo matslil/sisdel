@@ -1,6 +1,8 @@
-FROM bitnami/minideb:buster
+FROM ubuntu:20.04
 
 ARG LLVMVER=12
+ENV LANG C.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
 
 ADD https://github.com/Kitware/CMake/releases/download/v3.20.0/cmake-3.20.0-linux-x86_64.sh /
 
@@ -12,7 +14,7 @@ RUN OLD_GID=$(getent group sys | cut -d: -f3) && \
     find / -mount -group ${OLD_GID} -exec chgrp -h nogroup {} \;
 
 # Install non-python build tools
-RUN install_packages python3-minimal python3-venv python3-pip doxygen graphviz lsb-release wget gnupg software-properties-common make ninja-build coreutils lcov rpm openjdk-11-jre-headless curl
+RUN apt-get update && apt-get -y upgrade && apt-get install --yes --no-install-recommends python3-minimal python3-venv python3-pip doxygen graphviz lsb-release wget gnupg software-properties-common make ninja-build coreutils lcov rpm openjdk-11-jre-headless curl && apt-get clean
 
 # Install PlantUML
 RUN curl --location --output /usr/local/bin/plantuml.jar http://sourceforge.net/projects/plantuml/files/plantuml.jar/download
