@@ -8,9 +8,9 @@ readonly gid=$(id -g)
 
 export srcroot buildroot uid gid
 
-case "$1" in
+case "${1:-}" in
     compose) ( cd "${srcroot}" && docker-compose build ) && exit 0;;
-    config)  cmd=( cmake -G "Ninja Multi-Config" "${srcroot}" );;
+    config)  cmd=( cmake -G Ninja\ Multi-Config "${srcroot}" );;
     release) cmd=( cmake --build . --config Release );;
     debug)   cmd=( cmake --build . --config Debug );;
     build)   cmd=( cmake --build . );;
