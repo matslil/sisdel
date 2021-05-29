@@ -35,7 +35,7 @@ jobs:
                 fetch-depth: 0
           - uses: ./src/builder
             with:
-                cmdline: 'cmake -G "Ninja Multi-Config" -DCMAKE_TOOLCHAIN_FILE="\${CONAN_USER_HOME}/conan_paths.cmake" src'
+                cmdline: cmake -G 'Ninja Multi-Config' -DCMAKE_TOOLCHAIN_FILE="\${CONAN_USER_HOME}/conan_paths.cmake" src
           - uses: ./src/builder
             with:
                 cmdline: cmake --build . --target Release
