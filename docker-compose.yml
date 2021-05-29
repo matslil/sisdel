@@ -6,6 +6,7 @@ services:
     builder:
         build:
             context: builder
+        image: mliljegr/sisdel
         volumes:
         - ${srcroot}:${srcroot}:ro
         - ${buildroot}:${buildroot}:rw
