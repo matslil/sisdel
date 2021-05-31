@@ -2,10 +2,50 @@ name: 'builder'
 author: 'Sisdel Development Team'
 description: 'Toolchain for building Sisdel'
 inputs:
-    cmdline:
+    cmd:
         description: 'Command to be executed by toolchain'
         default: ''
         required: true
+    arg_0:
+        description: 'Argument'
+        default: ''
+        required: false
+    arg_1:
+        description: 'Argument'
+        default: ''
+        required: false
+    arg_2:
+        description: 'Argument'
+        default: ''
+        required: false
+    arg_3:
+        description: 'Argument'
+        default: ''
+        required: false
+    arg_4:
+        description: 'Argument'
+        default: ''
+        required: false
+    arg_5:
+        description: 'Argument'
+        default: ''
+        required: false
+    arg_6:
+        description: 'Argument'
+        default: ''
+        required: false
+    arg_7:
+        description: 'Argument'
+        default: ''
+        required: false
+    arg_8:
+        description: 'Argument'
+        default: ''
+        required: false
+    arg_9:
+        description: 'Argument'
+        default: ''
+        required: false
 
 runs:
     using: 'docker'

@@ -4,17 +4,19 @@ ARG LLVMVER=12
 ENV LANG C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 
-ADD https://github.com/Kitware/CMake/releases/download/v3.20.0/cmake-3.20.0-linux-x86_64.sh /
-
-RUN chmod +x /cmake-3.20.0-linux-x86_64.sh && /cmake-3.20.0-linux-x86_64.sh --skip-license --prefix=/usr/local && rm /cmake-3.20.0-linux-x86_64.sh
-
 # Make image podman friendly, move nogroup to lower part of gid
 RUN OLD_GID=$(getent group sys | cut -d: -f3) && \
     groupmod -g 200 nogroup && \
     find / -mount -group ${OLD_GID} -exec chgrp -h nogroup {} \;
 
 # Install non-python build tools
-RUN apt-get update && apt-get -y upgrade && apt-get install --yes --no-install-recommends python3-minimal python3-venv python3-pip doxygen graphviz lsb-release wget gnupg software-properties-common make ninja-build coreutils lcov rpm openjdk-11-jre-headless curl && apt-get clean
+RUN apt-get update && apt-get -y upgrade && apt-get install --yes --no-install-recommends python3-minimal python3-venv python3-pip doxygen graphviz lsb-release wget gnupg software-properties-common make coreutils lcov rpm openjdk-11-jre-headless curl unzip && apt-get clean
+
+ADD https://github.com/Kitware/CMake/releases/download/v3.20.0/cmake-3.20.0-linux-x86_64.sh /
+ADD https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linux.zip /
+
+RUN chmod +x /cmake-3.20.0-linux-x86_64.sh && /cmake-3.20.0-linux-x86_64.sh --skip-license --prefix=/usr/local && rm /cmake-3.20.0-linux-x86_64.sh
+RUN chmod +x /ninja-linux.zip && cd /usr/local/bin && unzip /ninja-linux.zip && rm /ninja-linux.zip
 
 # Install PlantUML
 RUN curl --location --output /usr/local/bin/plantuml.jar http://sourceforge.net/projects/plantuml/files/plantuml.jar/download

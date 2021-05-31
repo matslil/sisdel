@@ -30,23 +30,46 @@ jobs:
       runs-on: ubuntu-latest
       steps:
           - uses: actions/checkout@v2
+            name: Checkout source
             with:
                 path: 'src'
                 fetch-depth: 0
           - uses: ./src/builder
+            name: Configure
             with:
-                cmdline: cmake -G 'Ninja Multi-Config' -DCMAKE_TOOLCHAIN_FILE="\${CONAN_USER_HOME}/conan_paths.cmake" src
+                # No support for bash array, and I just can't figure out how white-spaces
+                # are handled when passed from yml to bash variable.
+                # Supports from arg_0 to and including arg_9.
+                cmd: 'cmake'
+                arg_0: '-G'
+                arg_1: 'Ninja Multi-Config'
+                arg_2: 'src'
           - uses: ./src/builder
+            name: Build release
             with:
-                cmdline: cmake --build . --target Release
+                cmd: 'cmake'
+                arg_0: '--build'
+                arg_1: '.'
+                arg_2: '--config'
+                arg_3: 'Release'
           - uses: ./src/builder
+            name: Build debug
             with:
-                cmdline: cmake --build . --target Debug
+                cmd: 'cmake'
+                arg_0: '--build'
+                arg_1: '.'
+                arg_2: '--config'
+                arg_3: 'Debug'
           - uses: ./src/builder
+            name: Build documentation
             with:
-                cmdline: cmake --build . --target Doc
+                cmd: 'cmake'
+                arg_0: '--build'
+                arg_1: '.'
+                arg_2: '--target'
+                arg_3: 'doc'
           - id: upload-artifacts
-            name: upload artifacts
+            name: Upload artifacts
             uses: actions/upload-artifact@v2
             with:
                 name: sisdel-binaries
