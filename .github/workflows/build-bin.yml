@@ -3,210 +3,76 @@
 on:
   push:
   pull_request:
-env:
-  CONAN_USER_HOME: "${{ github.workspace }}/conan"
 jobs:
-  setup-conan-libs:
-    name: setup Conan libraries
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-        - ubuntu-20.04
-          # - windows-latest # Some include files ends up in D:\.conan for some reason, making package Boost broken
-        - macos-latest
-    steps:
-    - id: checkout
-      name: checkout source
-      uses: actions/checkout@v2
-      with:
-        path: 'src'
-    - id: conan-cache
-      name: recall/setup Conan cache
-      uses: actions/cache@v2
-      with:
-        path: ${{ env.CONAN_USER_HOME }}/**
-        key: "conan-cache-6-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
-    - id: conan
-      name: install Conan
-      if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
-      uses: turtlebrowser/get-conan@main
-    - id: setup-msbuild
-      name: setup Visual Studio paths
-      if: ${{ matrix.os == 'windows-latest' && steps.conan-cache.outputs.cache-hit != 'true' }}
-      uses: microsoft/setup-msbuild@v1.0.2
-    - id: conan-build
-      name: build dependencies with Conan
-      if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
-      run: conan install --profile "../src/profile-${{ runner.os }}.txt" --build missing "../src/conanfile.txt"
-      working-directory: "${{ env.CONAN_USER_HOME }}"
-    - run: ls -AR
-    - id: conan-cleanup
-      name: cleanup unneeded build artifacts
-      if: ${{ steps.conan-cache.outputs.cache-hit != 'true' }}
-      run: conan remove --force --src --system-reqs '*'
-    - run: ls -AR
+#  lint:
+#    name: lint
+#    runs-on: ubuntu-latest
+#    steps:
+#    - id: checkout
+#      name: checkout source
+#      uses: actions/checkout@v2
+#      with:
+#        fetch-depth: 0
+#    - id: super-lint
+#      name: super-lint
+#      uses: github/super-linter@v3
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        VALIDATE_SHELL_SHFMT: false
+#    - id: c-lint
+#      name: c-linter
+#      uses: ArtificialAmateur/cpp-linter-action@0.01
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-binaries:
-    name: binary packages
-    needs:
-    - setup-conan-libs
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-        - ubuntu-latest
-          # - windows-latest # Conan does not build correctly for Windows
-        - macos-latest
-    env:
-      GITVERSION_SEMVER: '${{ needs.version-info.outputs.semVer }}'
-    steps:
-    - id: checkout
-      name: checkout source
-      uses: actions/checkout@v2
-      with:
-        path: 'src'
-        fetch-depth: 0
-    - id: gitversion
-      name: determine version
-      uses: gittools/actions/gitversion/execute@v0.9.9
-      with:
-        useConfigFile: true
-        configFilePath: 'src/GitVersion.yml'
-        targetPath: 'src'
-    - id: conan-cache
-      name: recall cached dependencies
-      uses: actions/cache@v2
-      with:
-        path: ${{ env.CONAN_USER_HOME }}/**
-        key: "conan-cache-6-${{ runner.os }}-${{ hashFiles('src/conanfile.txt', 'src/profile-${{ runner.os }}.txt') }}"
-    - id: assert-conan-cache
-      name: assert Conan cache was recalled
-      uses: nick-invision/assert-action@v1.1.0
-      with:
-        expected: 'true'
-        actual: ${{ steps.conan-cache.outputs.cache-hit }}
-    - id: mkdir-build
-      name: create build directory
-      run: cmake -E make_directory build
-    - id: cmake
-      name: setup CMake and Ninja
-      uses: lukka/get-cmake@latest
-    - id: ls-AR-1
-      shell: bash
-      run: ls -AR
-    - id: setup-msbuild
-      name: setup Visual Studio paths
-      if: ${{ matrix.os == 'windows-latest' }}
-      uses: microsoft/setup-msbuild@v1.0.2
-    - id: setup-cc-cxx
-      name: setup CC and CXX environment variables
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      env:
-        CC: clang-11
-        CXX: clang++-11
-      run: cmake -G "Ninja Multi-Config" -DBUILD_DOC:BOOL=NO ../src
-      working-directory: 'build'
-    - id: config
-      name: configure build
-      if: ${{ matrix.os != 'ubuntu-latest' }}
-      run: cmake -G "Ninja Multi-Config" -DBUILD_DOC:BOOL=NO ../src
-      working-directory: 'build'
-    - id: build-release
-      name: build release
-      run: cmake --build . --config Release
-      working-directory: 'build'
-    - id: build-debug
-      name: build debug
-      run: cmake --build . --config Debug
-      working-directory: 'build'
-    - id: build-packages
-      name: build packages
-      run: |
-          cmake --build . --config Release --target package
-          cmake --build . --config Debug   --target package
-      working-directory: 'build'
-    - id: upload-artifacts
-      name: upload artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: sisdel-binaries
-        path: build/sisdel-*
-        if-no-files-found: error
-
-  build-docs:
-    name: documentation package
-    needs:
-    - setup-conan-libs
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-        - ubuntu-latest
-          # - windows-latest # exhale cannot handle mixed backslash and slash in Windows paths correctly
-        - macos-latest
-    env:
-      GITVERSION_SEMVER: '${{ needs.version-info.outputs.semVer }}'
-    steps:
-    - id: checkout
-      name: checkout source
-      uses: actions/checkout@v2
-      with:
-        path: 'src'
-        fetch-depth: 0
-    - id: gitversion
-      name: determine version
-      uses: gittools/actions/gitversion/execute@v0.9.9
-      with:
-        useConfigFile: true
-        configFilePath: 'src/GitVersion.yml'
-        targetPath: 'src'
-    - id: cmake
-      name: setup CMake and Ninja
-      uses: lukka/get-cmake@latest
-    - id: python-setup
-      name: ensure Python is new enough
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-    - id: python-modules
-      name: install Python modules
-      run: python -m pip install sphinx breathe sphinx-rtd-theme exhale
-    - id: install-doxygen-ubuntu
-      name: ubuntu install doxygen
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: sudo apt-get install -y doxygen graphviz
-    - id: install-doxygen-windows
-      name: windows install doxygen
-      if: ${{ matrix.os == 'windows-latest' }}
-      run: choco install doxygen.install graphviz
-    - id: install-doxygen-macos
-      name: macos install doxygen
-      if: ${{ matrix.os == 'macos-latest' }}
-      run: brew install doxygen graphviz
-    - id: mkdir-build
-      name: create build directory
-      run: cmake -E make_directory build
-    - id: configure-cmake
-      name: run CMake configure
-      run: cmake -G "Ninja" -DBUILD_LIB:BOOL=NO -DBUILD_PARSER:BOOL=NO ../src
-      working-directory: 'build'
-    - id: build-doc
-      name: build documentation
-      run: cmake --build . --target doc
-      working-directory: 'build'
-    - id: build-packages
-      name: build documentation packages
-      run: cmake --build . --component doc --target package
-      working-directory: 'build'
-    - id: upload-artifacts
-      name: upload artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: sisdel-documentation
-        path: build/sisdel-*
-        if-no-files-found: error
+  build:
+      name: build Sisdel
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+            name: Checkout source
+            with:
+                path: 'src'
+                fetch-depth: 0
+          - uses: ./src/builder
+            name: Configure
+            with:
+                # No support for bash array, and I just can't figure out how white-spaces
+                # are handled when passed from yml to bash variable.
+                # Supports from arg_0 to and including arg_9.
+                cmd: 'cmake'
+                arg_0: '-G'
+                arg_1: 'Ninja Multi-Config'
+                arg_2: 'src'
+          - uses: ./src/builder
+            name: Build release
+            with:
+                cmd: 'cmake'
+                arg_0: '--build'
+                arg_1: '.'
+                arg_2: '--config'
+                arg_3: 'Release'
+          - uses: ./src/builder
+            name: Build debug
+            with:
+                cmd: 'cmake'
+                arg_0: '--build'
+                arg_1: '.'
+                arg_2: '--config'
+                arg_3: 'Debug'
+          - uses: ./src/builder
+            name: Build documentation
+            with:
+                cmd: 'cmake'
+                arg_0: '--build'
+                arg_1: '.'
+                arg_2: '--target'
+                arg_3: 'doc'
+          - id: upload-artifacts
+            name: Upload artifacts
+            uses: actions/upload-artifact@v2
+            with:
+                name: sisdel-binaries
+                path: sisdel-*
+                if-no-files-found: error
 

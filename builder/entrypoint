@@ -1,0 +1,23 @@
+#!/bin/bash -eu
+. /venv/bin/activate
+if [[ -n ${INPUT_CMD:-} ]]; then
+    set -x
+    cmdline=( "${INPUT_CMD}" )
+    arg_name_base=INPUT_ARG_
+    arg_name_idx=0
+    while true; do
+        arg_name=$( printf '%s%d' ${arg_name_base} ${arg_name_idx} )
+        arg_value="${!arg_name:-}"
+        if [[ -n ${arg_value} ]]; then
+            cmdline+=( "${arg_value}" )
+        else
+            break
+        fi
+        (( arg_name_idx++ )) || true
+    done
+    "${cmdline[@]}"
+else
+    set -x
+    "$@"
+fi
+

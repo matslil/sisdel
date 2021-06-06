@@ -1,7 +1,7 @@
 mode: Mainline
 major-version-bump-message: '\[breaking\]'
 minor-version-bump-message: '\[feature\]'
-path-version-bump-message:  '\[fix\]'
+patch-version-bump-message: '\[fix\]'
 no-bump-message: '\[none\]'
 
 branches:
@@ -21,7 +21,7 @@ branches:
     prevent-increment-of-merged-branch-version: false
     tag-number-pattern: '[/-](?<number>\d+)[-/]'
     track-merge-target: false
-    tracks-release-branch: false
+    tracks-release-branches: false
     is-release-branch: false
   feature:
     regex: ^features?[/-]

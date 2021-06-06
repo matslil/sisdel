@@ -1,10 +1,12 @@
+# Used by run script to make sure builds are done using builder container
+# This is the same container used by GitHub action actions/sisdel/builder
+
 version: '2'
 services:
-    do:
+    builder:
         build:
-            context: .
-            args:
-            - buildroot
+            context: builder
+        image: mliljegr/sisdel
         volumes:
         - ${srcroot}:${srcroot}:ro
         - ${buildroot}:${buildroot}:rw

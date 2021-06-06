@@ -1,7 +1,0 @@
-pip
-Sphinx
-breathe
-sphinx_rtd_theme
-exhale
-conan
-

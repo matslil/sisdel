@@ -1,0 +1,7 @@
+conan
+sphinx
+breathe
+sphinx-rtd-theme
+exhale
+sphinxcontrib-plantuml
+

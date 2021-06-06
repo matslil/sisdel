@@ -2,8 +2,37 @@
 Design Decisions
 ================
 
+.. uml::
+
+   Alice -> Bob: Hi!
+   Alice <- Bob: How are you?
+
 
 This document tries to answer the question why the language is designed the way it is.
+
+Problems to be solved
+=====================
+
+Under all the years I've been programming there are some problems that contemporary languages seems to have a hard time to solve. Like:
+
+1. Dependencies
+2. Resource ownership
+3. Interfacing modules from other languages
+4. Easy to find errors
+
+Dependencies
+   With proper dependency tracking it would be easy to code error messages that could explain what input that would have an impact on the error. It would also be easy to implement a reverse runtime debugger, since you would only need to store events coming from outside the module being debugged.
+   It would also make it easier to make proper module management with automatic semantic versioning where it would be possible to know by looking at the code what change is a breaking change, what change introduce a feature and what change is merely a bug fix.
+   Automatic dependency resolution to retrieve needed modules to run application would also be simplified.
+
+Resource ownership
+   Similar concept as Rust is using, but make better use of inference so it becomes more developer friendly. No need to explicitly deallocate resource, no possibilities to reference non-existing resources.
+
+Interfacing modules from other languages
+   It is common to call other applications from within the current application. Doing so should be similar to calling a local function. Same reasoning for calling functions in compiled shared libraries or running Java code.
+
+Easy to find errors
+   Coding and design errors should be signalled as soon as possible, preferably during editing. Having a strict typing system combined with type inference, should make it possible to both ensure correct code without having to write loads of boiler plate code.
 
 Goals
 =====
@@ -41,19 +70,19 @@ Paradigms
 ---------
 
 Structured programming
-   removed possibility to explicitly transfer flow of control to some other part of the code, typically using the "goto" statement. The structured programming paradigms said that such explicit transfer of control should be done using structures like conditionals and loops.
+   Removed possibility to explicitly transfer flow of control to some other part of the code, typically using the "goto" statement. The structured programming paradigms said that such explicit transfer of control should be done using structures like conditionals and loops.
 
 Functional programming
-   removed possibility for having variable assignment, only initializations were allowed. This removed a lot of robustness problems around illegal states due to parts of an object state to be modified but missed to update other parts of the state.
+   Removed possibility for having variable assignment, only initializations were allowed. This removed a lot of robustness problems around illegal states due to parts of an object state to be modified but missed to update other parts of the state.
 
 Object-oriented programming
-   removed the possibility to do indirect transfer of control directly, typically using function pointers. Instead this is done using polymorphism or interface.
+   Removed the possibility to do indirect transfer of control directly, typically using function pointers. Instead this is done using polymorphism or interface.
 
 Declaractive programming
-   express what the end state looks like.
+   Express what the end state looks like.
 
 Imperative programming
-   describes sequential steps for reaching the end step.
+   Describes sequential steps for reaching the end step.
 
 Common problems
 ---------------
@@ -141,18 +170,9 @@ Error handling is done primarily using error return values. Exceptions are only 
 
 Object
 
-Value
-
 Type
 
-Method
-
-Constraint
-
-Device
-  Special object that represents some hardware in a specific operating state. If the hardware changes operating state, this is reflected using a new device. A device has a name, and read and write methods. Any operation done on a device is seen as a side effect.
-
-State
+Operator
 
 Type
 ----
@@ -161,7 +181,6 @@ Type in Sisdel consists of the following parts:
 
 1. Fundamental types
 2. Constraints
-3. Side effects
 4. Representation
 
 Fundamental type are meant to describe fundamentally different things, while constrictions are meant to limit the use of the type. Side effects are operations done to a device, and signals synchronization points. The representation is how the data is stored, and does not by itself prohibit use but rather triggers conversions.
@@ -172,23 +191,51 @@ Fundamental types
 Fundamental types describes things which cannot be used interchangably without conversion.
 
 Number
-  Any rational number
+   Any number, rational, irrational, complex.
 
-String
-  UTF-8 Unicode string with associated size field.
+Boolean
+   Either true or false.
+
+Comparison
+   One of: less, equal, greater.
+   Result from the <=> operator.
+
+Character
+   UTF-8 Unicode encoded character.
 
 Set
-  Collection of objects with no ordering.
-
-List
-  Strict sequence of objects. Typically used to specify when time matters.
+   Collection of objects with no ordering.
 
 Map
-  Collection of key value pairs. Different keys can have different types, same is true for values. Arrays are restricted maps, where the key type is unsigned integer, and there is a single specified type for all values.
+   Collection of key value pairs. Different keys can have different types, same is true for values. Key cannot be a container.
 
+Identifier
+   Name that only has a meaning for the compiler, and is not associated with a specific value. Typically used to address objects so they can be referred to in the code.
+
+Operator
+   List of expressions executed when operator is used. The expression will have a variable self which is the object left to operator, and arg which is the object to the right of operator. There is also a thread object representing execution environment for the operator.
 
 .. NOTE::
-   Set, list and map has a size, and this size can be infinite. A random generator method would be an example of something that returns an infinite list. You cannot freely mix inifinite lists with finite lists freely, you need to specify a portion of the infinite list to do a combination.
+   Set and map has a size, and this size can be infinite. A random generator method would be an example of something that returns an infinite list. You cannot freely mix inifinite lists with finite lists, you need to specify a portion of the infinite list to do a combination.
+
+The following groups of fundamental types exists:
+
+Value
+   Includes number, boolean and character.
+
+Container
+   Include set and map.
+
+Some types provided by Sisdel built on fundamental types:
+
+List
+   Ordered set.
+
+String
+   List of characters.
+
+Stream
+   Serial list.
 
 Constraints
 ~~~~~~~~~~~
@@ -201,17 +248,103 @@ As a special case there are units. Unit has as its sole purpose to create incomp
 
 There is also a state concept which can be used by constraints. State is another meta-data associated with objects.
 
-Side effects
-~~~~~~~~~~~~
+Types of constraints:
 
-Sisdel has a concept of device, which is meant to mirror hardware. A device can be read, written, opened, closed and changed. All of these operations change the state of the device, and it is possible to describe dependencies between device states.
+Unit
+   Applies to: Value.
+   Unit is used to make custom types and be able to describe compatibility between them. It is also possible to specify for each operation what type is returned by the operation given what type(s) are given as input.
 
-If an object affects a device in some of those ways, this becomes part of the object type. So an object type can be "read from device x".
+Valid values
+   Applies to: Any.
+   Set of value values.
+
+Size
+   Applies to: Container.
+   Size can be finite or infinite, which makes distinct types. In order to use infinite container where a finite is expected, you must specify how much of the inifite container to use.
+   Size can be set compile time or at execution time.
+
+Serial
+   Applies to: Any.
+   Whether reads/writes to and from the container matters. For example, if using a map and do reads and writes to different elements in the map, those reads and writes will be performed in the exact order as issued. This is useful when describing interactions going outside of the Sisdel domain, for example when accessing hardware registers or using remote protocols.
+
+Ordered
+   Applies to: Any.
+   This constraint is set implicitly on any object that has an <=> operator.
+   Can be set explicitly on objects without <=> operator, in which case the order will be defined by the order elements are inserted.
+
+Element
+   Applies to: Container.
+   Type constraint applied to every element within the container.
+
+Duplicates
+   Applies to: Container.
+   Allow container to have several occurrences of the same object, or in the case of map, for the same key. For ordered containers these entries will be kept in insert order.
+   The default behavior for sets is to ignore duplicates, i.e. attempt to insert an already existing element will simply be ignored. For maps, attempts to insert for the same key will result in the value being replaced with the new value given.
+
+Compatibility
+   Applies to: All.
+   Type constraint applied to the object to ensure this object is always type compatible with the given object.
+
+Derived from
+   Applies to: All.
+   Which objects that influenced what content this object has. Must be complete, i.e. there should not be more or less objects. This constraint is usually inferred by the compiler whenever a new object is created, but can be explicitly enforced to constrain a type.
+
+Commutative
+   Applies to: Operator.
+   If left-hand side of the operator is swtiched with the right-hand side, the result is the same.
+
+Associative
+   Applies to: Operator.
+   If operator is applied multiple times in a row in an expression, placing parenthesis will not change the result.
 
 Representation
 ~~~~~~~~~~~~~~
 
 Representation describes how the value is stored, e.g. number of bits used, endian, data format. It can for example be used to say that a map is stored as Yaml. If a specific representation is requested, and the value has another representation, this triggers a conversion. This is an operator run on the original representation whose return value need to be of the expected representation. If no such conversion has been defined, this becomes a type incompatibility error.
+
+- Storage size in bits or bytes
+- Encoding (e.g. IEEE 754, UCS-2, UTF-32, ... How to handle home-made formats?)
+- Memory address location
+
+Using the language
+------------------
+
+Working with hardware
+~~~~~~~~~~~~~~~~~~~~~
+
+If your hardware defines a register with 32 individual bits, where reading and/or writing to them causes side effects, you could define it like the following:
+
+reg is list as
+    stream                 # says access order to the stream matters
+    ordered                # ordered list becomes array
+    element boolean        # each value can only have values true or false
+    element storage-size 1 as bits # each element only occupies one bit of storage space
+    size 32                # number of elements in array
+    address hex 8000'fe00  # memory address mapped for this array
+
+How to make sure individual bits are accessed as they should would depend on hardware description used for the Sisdel compilation. For architectures support addressing individual bits this will be used, others might support reading the register, modify the bits being affected, and write the result back, and yet others might need a shadow register to avoid having to read current value.
+
+Describing sequences
+~~~~~~~~~~~~~~~~~~~~
+
+Examples of where sequences can be useful would include describing data encoding, message API or pattern matching.
+
+Example::
+
+    my-sequence is list unsigned #( message version )# ( unsigned as nr-entries ) list string as ( size nr-entries )
+
+This defines a type of name my-sequence that starts with an unsigned number, which an inline comment explains is the version number, followed by another unsigned number which is associated with the name nr-entries, followed by a list of strings, where the size of the list is determined by nr-entries.
+
+If this is to be used to define a message format to be used externally, this needs to be serialized, or encoded, into a format suitable to be transmitted. It then needs to be deserialized, or decoded, to an object Sisdel understands.
+
+One common encoding format used for configuration files and REST HTTP APIs is YAML. The Sisdel yaml type can be map (object in YAML), list, integer or string. These can be combined. Since my-sequence above fits this, YAML code be used like this::
+
+    message as my-sequence is ( 1 , 2 , '(Hello)' , '(world)' )
+    print message as yaml
+
+This would print the following::
+
+    [1,2,['Hello','world']]
 
 Type compatibility
 ~~~~~~~~~~~~~~~~~~
@@ -231,6 +364,364 @@ As a special case, an array or map with single value is type compatible with eac
 
 State is not by itself a type, but can be used with constrictions to describe a type. The state needs a context to have a meaning, which also mean that different contexts can have same name of state, but refer to different things.
 
+Parsing
+-------
+
+Tokens
+~~~~~~
+
+Each token is separated by white space. The only characters not allowed for tokens are control and white space characters. Every token must be separated by white space.
+
+Some characters have special meaning when parsed. For parenthesis characters, ({[, any character surrounding them must match the matching parenthesis character, )}], in reverse order. So the token --( is matched by )--, while {{ is matched by }}. Any token within such pair are being grouped.
+
+Indentation
+~~~~~~~~~~~
+
+Each line can start with zero or more tab character. This is the only valid place for tab characters. Each tab character represents one indentation level. All consecutive lines with the same indentation represents item in a set, and is therefore equivalent to separating them with comma character. I.e., the following::
+
+    mylist is
+        1
+        2
+        3
+
+is equivalent with::
+
+    mylist is ( 1 . 2 . 3 )
+
+Note the space before and after comma characters, since each token must be separated by white space.
+
+In case the indented line starts with an operator, the scope for the operator, self or left-hand side, will be where the previously less indented line left of at. It would be like the line was continued with the indented line. This can be used to break up long lines, but also to write several operation done from the same scope by having several indented lines starting with an operator.
+
+Grouping operator
+~~~~~~~~~~~~~~~~~
+
+There is a special operator that group objects rather than operate on them. The grouping operator can also specify conditions for the objects contained, e.g. what type the scope in the group has.
+
+A group operator starts with an operator name which has one or more of the following characters included::
+
+    (
+    {
+    [
+
+This character can be surrounded with other characters that are allowed for identifier names. The group ends when a reversed version of the start is used. The reverse is here defined as using the closing version of the parenthisis above, i.e. ) when starting with (, } when starting with { and so on. Furthermore, characters surrounding the start token must be reversed.
+
+Here are some examples of group start and group end pairs, with no objects contained::
+
+    ( )
+    { }
+    [ ]
+    {{ }}
+    --[ ]--
+    my( )ym
+
+Non-greedy token matching
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Operator takes one argument, and the match is done in a non-greedy fashion. To supply several items for the operator, these items need to be contained in a group, e.g. set. Example::
+
+    print '(Hello World)'
+
+Here the operator print is supplied with a list of characters using '( )' grouping operator.
+
+Note that if an operator is used to supply argument to another operator, grouping will be needed. The following will most likely not do what you intended::
+
+    append-world is operator arg '( World)'
+
+This would be equivalent to::
+
+    ( append-world is operator arg ) '( World)'
+
+And this would not even compile. You need to write this as:
+
+    append-world is ( operator arg '( World)' )
+
+Operator precedence
+~~~~~~~~~~~~~~~~~~~
+
+The operator precedence is very simple. The code line is simply scanned from left to right, and evaluates operators in that order. The only way to change this order is by using grouping operators.
+
+Special values
+--------------
+
+The following special values exists:
+
+nil
+   Represents an empty set.
+
+any
+   Represents a universal set, i.e. everything.
+
+err
+   Represents an error. Map with information about the error.
+
+true
+   Boolean representing true value.
+
+false
+   Boolean representing false value.
+
+less
+   Comparison value representing sorts less than.
+
+equal
+   Comparison value representing sorts equal to.
+
+greater
+   Comparison value representing sorts greater than.
+
+_
+   Underscore represents a space character. Useful when building strings with spaces in them.
+
+Scope
+-----
+
+Referring an object defines a scope. Indented code block also defines a scope. Some objects are created implicitly, e.g. a source file, but most objects are created in code.
+
+Everything described in a scope is by default expected to be a complete description of something, could be a description of how a new object is created or what an operation does. All code within the scope can be executed in any order, with one exception: List. List is used to enforce explicit ordering, and can be used to describe cases when order matters. This could for example be a random number generator, which would return an infinite list. The order this list is read matters. Or it could be piece of hardware, where the order which certain registers are read or written to matters.
+
+Object created in a scope can be modified within the scope, but cannot be used since it will not be seen as fully initialized until the scope exits. The scope would typically return the initialized object as its value, and once this has been done this object can no longer be modified. However, new objects can be created based of the original object.
+
+Each new line restarts the scope to the containing scope. In a source file, each line written without indentation would then use the source file scope as the starting scope. Each object addressed on the line will change the scope as the line progress, until a newline character is encountered.
+
+For indented lines, each new line starts with the scope of previous one less indented line.
+
+A scope can also have an at-exit handler associated with it. It contains code that will be executed right before the scope is exited. This can be attached to objects to emulate destructors typically found in object-oriented languages.
+
+Thread
+------
+
+Thread is an object containing a shared state description for an execution. Each time a new execution thread is created, e.g. when issuing an operator, a clone of the calling thread object is done and then used in the called thread scope. This works similarly to how environment variables work in Unix.
+
+Arg
+---
+
+This object contains the right hand side of the operator arguments. The left hand side argument is inherited into current scope and can be accessed without scope operators.
+
+Space operator
+--------------
+
+For a sequence of objects, the following happens: (matches are tried in the order listed)
+
+MAP ANY
+   Index MAP using ANY as key.
+
+SET STE
+   Merge two sets into one.
+
+TYPE ANY
+   Creates an object of type TYPE with value ANY. Note that this becomes an anonymous object in current scope.
+
+Set
+---
+
+Set can be given in code in two different ways. Either using , character, like::
+
+    my_set is ( 1 , 2 , 3 )
+
+Or, using indented lines::
+
+    my_list is
+        1
+        2
+        3
+
+These two gives identical results.
+
+When using an operator that normally do not expect its right-hand argument to be a set, but is given a set, it will be applied repeatedly and return a list of result. Like::
+
+    sum_set is 2 + ( 1 , 2 , 3 )
+
+will set sum_set to value ( 3 , 4 , 5 ). This can be used generically, e.g.::
+
+    fun_list is 100
+        > 50 then '( large )'
+        = 50 then '( medium )'
+        < 50 then '( small )'
+        & 1 = 0 then '( even )'
+
+will set fun_list to ( '( largs )' , '( even )' )
+
+Built-in operators
+------------------
+
+Conditional
+~~~~~~~~~~~
+
+BOOLEAN then EXPRESSION
+   Works like an if statement. If BOOLEAN is true, then EXPRESSION is executed and value of EXPRESSION is returned. Otherwise, nil is returned.
+
+BOOLEAN else EXPRESSION
+   Works like an if-else statement. If BOOLEAN is false, then EXPRESSION is executed and value of EXPRESION is returned. Otherwise, nil is returned.
+
+Assignment
+~~~~~~~~~~
+
+IDENTIFIER is ANY
+   Define a new identifier IDENTIFIER to be associated with ANY.
+
+ANY as CONSTRAINT
+   Puts CONSTRAINT on ANY.
+
+operator EXPRESSION
+   Defines an anonymous operator which evaluates EXPRESSION. The special variable arg is defined in the scope of EXPRESSION containing the argument to the operator.
+
+unsigned is ( number as ( 0 .. nil ) )
+
+Arithmetic operators
+~~~~~~~~~~~~~~~~~~~~
+
+NUMBER + NUMBER
+   Arithmetic addition of two numbers.
+
+NUMBER - NUMBER
+   Arithmetic subtraction of two numbers.
+
+NUMBER * NUMBER
+   Arithmetic multiplication of two numbers.
+
+NUMBER / NUMBER
+   Arithmetic division of two numbers.
+
+NUMBER % NUMBER
+   Remainder if left-hand side is divided with right-hand side.
+
+NUMBER ^ NUMBER
+   Left-hand side raised to right-hand side.
+
+Bit-wise operators
+~~~~~~~~~~~~~~~~~~
+
+UNSIGNED & UNSIGNED
+   Bit-wise and operation.
+
+UNSIGNED | UNSIGNED
+   Bit-wise or operation.
+
+UNSIGNED || UNSIGNED
+   Bitwise xor operation.
+
+~ UNSINGED
+   Bit-wise negate operation.
+
+Container operators
+~~~~~~~~~~~~~~~~~~~
+
+VALUE select LIST
+   Each element of LIST is "OPERATOR VALUE then EXPRESSION", where first VALUE is used as left-hand side of OPERATOR.
+   Return value is the EXPRESSION for the first entry in LIST where "VALUE OPERATOR VALUE" evaluates to true.
+   As a special case, "OPERATOR VALUE then" can be replaced with "otherwise".
+   Example::
+
+   myname select
+       = '(adam)' then print '(male)'
+       = '(eva)'  then print '(female)'
+       otherwise print '(unknown sex)'
+
+first LIST
+   Returns first item in LIST.
+
+last LIST
+   Returns last item in LIST.
+
+LIST zip LIST
+   Returns map with left-hand side as list of keywords and right-hand side as a list of values to be associated with the keywords. Both lists need to be of same size.
+
+CONTAINER + CONTAINER
+   Appends two containers. If any CONTAINER is ordered, the returned container will also be ordered. This is the union operator.
+
+CONTAINER - CONTAINER
+   Removes occurences of right-hand side in left-hand side, and returns the result. For map, keys occuring on the right-hand side will be removed from the left hand side.
+
+CONTAINER disjoint CONTAINER
+   Returns true if the two sets have no element in common. For map this means no common key.
+
+CONTAINER intersect CONTAINER
+   Returns elements common to both CONTAINERS. For map, this returns key value pairs where key occurs in both maps.
+
+SET repeat UNSIGNED
+   Repeat CONTAINER UNSIGNED number of times.
+
+first CONTAINER
+   Returns first element of CONTAINER. This requires the container to be ordered (sortable).
+
+last CONTAINER
+   Returns last element of CONTAINER. This requires the container to be ordered (sortable).
+
+CONTAINER every UNSIGNED
+   Returns every UNSIGNED element of CONTAINER. This requires the CONTAINER to be ordered (sortable).
+
+LIST at UNSIGNED
+   Returns element UNSIGNED in LIST, first item is 0.
+
+MAP at ANY
+   Returns value in MAP associated with ANY.
+
+CONTAINER apply OPERATOR
+   Goes through each item in CONTAINER and puts operator between the elements, and returns the result.
+   If CONTAINER is ordered, this will be done in the order given by CONTAINER. If CONTAINER is unordered, then OPERATOR must be commutative, i.e. it must not matter in which order the items are processed.
+
+ANY = ANY
+   Returns true if the two objects has the same value, false otherwise.
+
+type ANY = type ANY
+   Returns true if the two objects has the same types, false otherwise.
+
+SORTABLE < SORTABLE
+   Returns true if the left-hand object sorts less than the right-hand object, false otherwise.
+
+SORTABLE > SORTABLE
+   Returns true if the left-hand object sorts greather than the right-hand object, false otherwise.
+
+not BOOLEAN
+   Returns true if BOOLEAN is false, false otherwise.
+
+BOOLEAN and BOOLEAN
+   Returns true if both BOOLEAN are true.
+
+BOOLEAN or BOOLEAN
+   Returns true if one or both of BOOLEAN is true.
+
+BOOLEAN xor BOOLEAN
+   Returns true if one and only one of BOOLEAN is true.
+
+SORTABLE <=> SORTABLE
+   Returns less if left-hand side sorts less than right-hand side, equal if objects sorts equal, or greater if left-hand side sorts greater than right-hand side.
+
+Immediate sets
+--------------
+
+Specify a set using "," operator. A single item is equivalent to a set containing same single item.
+
+Ranges
+------
+
+ANY .. ANY
+   Both objects must be sortable. Creates a set of object starting with the first object until, but not including, the second.
+
+nil .. ANY
+   Creates a list of objects of type ANY starting with lowest possible until, but not including ANY.
+
+ANY .. nil
+   Creates a list of objects of type ANY starting with ANY until highest posible.
+
+Error handling
+--------------
+
+There are two ways to handle errors in Sisdel: Return error object or throw exception.
+
+Error object
+~~~~~~~~~~~~
+
+The error object is special in that all operators are expected to be able to return it unless stated otherwise, and no operator is expected to be able to have it as input unless stated otherwise. Receiving an error object does not cause an error at the caller end, but trying to supply an operator with an error object that cannot handle it will.
+
+When an error is caused by attempting to use an error object when the operator cannot handle it, then the current scope is exited with the error object as evaluated value, i.e. the error object is propagated. This repeats until there is no more scope to exit in which case a default handler is invoked that handles it, typically by logging it and/or printing it.
+
+Exception
+~~~~~~~~~
+
+When throwing an exception it is a request for help. The code has ended up in a corner where it does not know how to get out of. Typical example would be out of memory. An exception object is thrown, and the closest defined exception handler receives it. The handler can choose between handling the exception, which means that the error has been sorted out, e.g. more memory allocated, so the execution can continue, or the handler can skip the exception and hope that the next higher exception handler can handle it.
+
+This means that when a code throws an exception, either the program will continue since the issue has been sorted out, or the program will terminate because no handler could handle the exception.
 
 Syntax Playground
 =================
