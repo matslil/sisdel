@@ -19,6 +19,7 @@ Under all the years I've been programming there are some problems that contempor
 2. Resource ownership
 3. Interfacing modules from other languages
 4. Easy to find errors
+5. Support multiple applications
 
 Dependencies
    With proper dependency tracking it would be easy to code error messages that could explain what input that would have an impact on the error. It would also be easy to implement a reverse runtime debugger, since you would only need to store events coming from outside the module being debugged.
@@ -33,6 +34,10 @@ Interfacing modules from other languages
 
 Easy to find errors
    Coding and design errors should be signalled as soon as possible, preferably during editing. Having a strict typing system combined with type inference, should make it possible to both ensure correct code without having to write loads of boiler plate code.
+
+Support multiple applications
+   Most generic programming languages tend to work best for a certain type of application. Some are better at describing a user interface, some are better at event handling, some at handling low level access with hardware interrupts and so on.
+   Sisdel intends to build on a simple core which then can be extended in different directions depending on use case. This way you can have the advantages that domain specific programming languages give you, without having to learn a whole new language.
 
 Goals
 =====
@@ -63,26 +68,50 @@ Composable
 - Be able to write knew variants of a module without needing to recompile the other parts of the code
 - Simple syntax to promote using the language as a domain specific language (easier to modify its looks)
 
+Error localization
+------------------
+
+Using the dependencies that the language provides, make an error localization that can point out the cause of the error, rather than just how they manifest themselves.
+
 Source of Inspiration
 =====================
 
 Paradigms
 ---------
 
+As compilers get access to more and more computational power, they have been able to help the developer more. This means that some details of how the program works could be removed from the language and let the compiler handle it instead.
+Sisdel will build on these and add one of its own: Removal of the generic loops.
+
 Structured programming
    Removed possibility to explicitly transfer flow of control to some other part of the code, typically using the "goto" statement. The structured programming paradigms said that such explicit transfer of control should be done using structures like conditionals and loops.
+   **Sisdel**: There is no goto, but there are conditionals and iterators. There is also an at exit handler.
 
 Functional programming
    Removed possibility for having variable assignment, only initializations were allowed. This removed a lot of robustness problems around illegal states due to parts of an object state to be modified but missed to update other parts of the state.
+   **Sisdel**: Assignment creates new instances, not modifying them. Mutability will be simulated where a new object with the same name and scope is created, but where an implicit generation counter or hash value is used to make each instance unique.
 
 Object-oriented programming
    Removed the possibility to do indirect transfer of control directly, typically using function pointers. Instead this is done using polymorphism or interface.
+   **Sisdel**: Sisdel has objects but no classes, instead objects are created by object factories. It is possible in Sisdel to declare object compatibility, where an object can be declared as being compatible with some other. This simulates  inheritance on the interface level, but is implemented using containment.
 
-Declaractive programming
-   Express what the end state looks like.
+Removal of generic loops
+   A generic loop is hard to understand, hard to know if it terminates when it should and hard to know whether there is a risk of running it one time too many or too few. It is much easier to understand loops that iterates a list, a structure or that are designed to loop forever.
+   **Sisdel**: Sisdel supports forever loops and iterating lists.
 
-Imperative programming
-   Describes sequential steps for reaching the end step.
+Modes of programming
+--------------------
+
+Events
+   Wait for events and perform an action depending on event. Events can be sent, received and broadcasted to all or to specific groups.
+   **Sisdel**: Sisdel has a scope which can tell who called the object method even for remote calls, which makes this useful for event indication. Sisdel has also a thread concept, and combined with lazy evaluation this mimics the behavior for asynchronous sending of events. Broadcasts could be mimiced by having a broadcast receive lists in the shared scope object.
+
+Pipelines
+   Data progresses in a pipeline fashion, where output from one stage is the input for the next. Pipelines can be forked and merged. Broadcast status messages can be sent to the whole pipeline or a part of it. Exceptions will terminate the whole pipeline.
+   **Sisdel**: This is the default behavior for object method calls, since output of a one call is the input for the next. Broadcasts can be mimiced using broadcast receiver lists in the scope object. Sisdel support exceptions.
+
+Descriptive
+   Describes what to be done, not how. Example would be make files describing how the files depend on each other, but does not describe exactly which order to build them.
+   **Sisdel**: This is the default behavior of Sisdel, since it defaults to functional behavior with implicit as well as explicit dependency support.
 
 Common problems
 ---------------
