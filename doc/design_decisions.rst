@@ -43,7 +43,7 @@ Goals
 =====
 
 1. Well defined language, no undefined nor implementation defined behavior
-2. Robust, errors are detected as early as possible, preferably at compile time
+2. Robust, logic errors are detected as early as possible, preferably at compile time
 3. Modularized, errors in one module does not propagate into another
 4. Composable, modules should never be more specific than needed
 5. Error indications pointing at root causes, not just symptoms
@@ -92,11 +92,40 @@ Functional programming
 
 Object-oriented programming
    Removed the possibility to do indirect transfer of control directly, typically using function pointers. Instead this is done using polymorphism or interface.
-   **Sisdel**: Sisdel has objects but no classes, instead objects are created by object factories. It is possible in Sisdel to declare object compatibility, where an object can be declared as being compatible with some other. This simulates  inheritance on the interface level, but is implemented using containment.
+   **Sisdel**: Sisdel has objects but no classes, instead objects are created by object factories. It is possible in Sisdel to declare object compatibility, where an object can be declared as being compatible with some other. This simulates inheritance on the interface level, but is implemented using containment.
 
 Removal of generic loops
    A generic loop is hard to understand, hard to know if it terminates when it should and hard to know whether there is a risk of running it one time too many or too few. It is much easier to understand loops that iterates a list, a structure or that are designed to loop forever.
    **Sisdel**: Sisdel supports forever loops and iterating lists.
+
+Resource allocation is initialization
+   Make initialization and allocation of a resource an atomic operation. Avoids all pitfalls when handling an allocated but uninitialized resource.
+   **Sisdel**: Dependency tracking is used to make sure no code path can use an uninitialized resource.
+
+Atomicity, consistency, isolation, durability
+  This is typical requirement for a database operation. If you modify your database, you want this modification to either success or fail (atomicity), to never set the database in an unconsistent state, be unaffected by other operations done in parallell, and if successfull be stored in a way that ensures that it is not lost by mistake.
+  **Sisdel**: Operations on individual objects are ensured by the compiler to be compliant with ACID in the scope of the running program. Possibility to describe dependencies between objects, which will make the compiler to ensure this for more complex scenarios.
+
+SOLID
+  This is for interface design, where S is for single responsibility, i.e. the interface should only do one thing and not a mix of unrelated things. O is for opened for extensions, but closed for changes. You can add to the interface, but if you need to change it, you need to design a new interface. This ensures backwards compatibility. L is for Liskov substitution, which means that if an object S inherits form object T, then object S can be used where T is expected without breaking any desirable properties of the program. I is for interface segration, which means that a user of one interface must not be forced to be dependent on other interfaces they do not use.D is for depency inversion, which means that higher-level functionality must not be dependent on low-level functionality. This means that low-level functionality must not be directly accessible from high-level functionality.
+  **Sisdel**: *S*: Single responsibility is something the programmer must ensure, it is hard for the compiler to know this. *O*: Sisdel objects cannot be modified once defined, but you can define a new object which extends an existing object. *L*: If an object is declared as compatible with another object, Sisdel will ensure that this is true from a programming language perspective. *I*: Objects in Sisdel are not allowed to force user of the object to be dependent on some other object which the user of the object might not want. *D*: Since the definition of higher and lower level of functionality is unknown to Sisdel it cannot ensure higher level functionality does not expose lower level functionality.
+
+Tiers of programming language design
+------------------------------------
+
+This tries to describe how high-level the programming language is:
+
+0. Chaos, i.e. nothing understandable
+1. Single opaque object, example: Calculator
+2. Patterns, example: Assembler
+3. Hierarchies, example: C
+4. Black boxes, example: C++, Haskell
+
+The lowest level of entity in Sisdel is the object, which could resemble the single opaque object. It has an interface, like a calculator, but expose nothing about how it works.
+
+Sisdel uses types to be able to describe patterns, similar to what other languages do. However, Sisdel see types as a type itself, allowing things like iterators and conditionals to work on types as well. This makes it possible to have very expressive patterns.
+
+Sisdel defines dependencies to describe hierarchies. Object-oriented languages typically use containment and inheritance for this. In Sisdel, those are translated to dependencies, together with other types of dependencies, e.g. required ordering. Since dependencies is an integral part of the language, things like iterators and conditionals can be used on them as well. This allows an object to contain another object given some condition, as long as it can be determined compile time.
 
 Modes of programming
 --------------------

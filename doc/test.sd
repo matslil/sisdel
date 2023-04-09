@@ -1,0 +1,26 @@
+fib is function arg is integer unsigned do
+    fib ( arg - 1 ) + fib ( arg - 2 )
+
+fib 0 is 0
+
+fib 1 is 1
+
+-------------------
+
+book is pattern
+    chapter repeat
+
+chapters is pattern
+    header
+    paragraph repeat
+
+paragraph is pattern
+    indentation
+    sentence repeat
+
+sentence is pattern
+    ( word ( comma or semicolon or colon ) space ) repeat period
+
+word is pattern
+    character repeat
+
